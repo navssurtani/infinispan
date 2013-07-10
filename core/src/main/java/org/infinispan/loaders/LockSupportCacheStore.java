@@ -5,6 +5,7 @@ import java.io.ObjectOutput;
 import java.util.Set;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.util.concurrent.locks.StripedLock;
@@ -29,7 +30,7 @@ import org.infinispan.util.logging.LogFactory;
  * @param <L> the type of the locking key returned by
  *            {@link #getLockFromKey(Object)}
  */
-public abstract class LockSupportCacheStore<L> extends AbstractCacheStore {
+public abstract class LockSupportCacheStore<L, T extends CacheStoreConfiguration> extends AbstractCacheStore <T> {
 
    private static final Log log = LogFactory.getLog(LockSupportCacheStore.class);
    private static final boolean trace = log.isTraceEnabled();
@@ -39,7 +40,7 @@ public abstract class LockSupportCacheStore<L> extends AbstractCacheStore {
    private LockSupportCacheStoreConfig config;
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(T config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       super.init(config, cache, m);
       this.config = (LockSupportCacheStoreConfig) config;
    }

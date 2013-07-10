@@ -3,9 +3,9 @@ package org.infinispan.loaders.file;
 import org.infinispan.Cache;
 import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.commons.io.ExposedByteArrayOutputStream;
-import org.infinispan.loaders.CacheLoaderConfig;
+import org.infinispan.configuration.cache.FileCacheStoreConfiguration;
+import org.infinispan.configuration.cache.FileCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.bucket.Bucket;
 import org.infinispan.loaders.bucket.BucketBasedCacheStore;
 import org.infinispan.commons.marshall.StreamingMarshaller;
@@ -46,14 +46,12 @@ import java.util.concurrent.TimeUnit;
  * @author Sanne Grinovero
  * @since 4.0
  */
-@CacheLoaderMetadata(configurationClass = FileCacheStoreConfig.class)
-public class FileCacheStore extends BucketBasedCacheStore {
+public class FileCacheStore <T extends FileCacheStoreConfiguration> extends BucketBasedCacheStore<T> {
 
    static final Log log = LogFactory.getLog(FileCacheStore.class);
    private static final boolean trace = log.isTraceEnabled();
    private int streamBufferSize;
 
-   FileCacheStoreConfig config;
    File root;
    FileSync fileSync;
 
@@ -65,9 +63,9 @@ public class FileCacheStore extends BucketBasedCacheStore {
    }
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(T config, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
       super.init(config, cache, m);
-      this.config = (FileCacheStoreConfig) config;
    }
 
    @Override
@@ -325,14 +323,14 @@ public class FileCacheStore extends BucketBasedCacheStore {
    }
 
    @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
-      return FileCacheStoreConfig.class;
+   public T getConfigurationClass() {
+      return ;
    }
 
    @Override
    public void start() throws CacheLoaderException {
       super.start();
-      String location = config.getLocation();
+      String location = T.location();
       if (location == null || location.trim().length() == 0) {
          location = "Infinispan-FileCacheStore"; // use relative path!
       }
@@ -346,9 +344,9 @@ public class FileCacheStore extends BucketBasedCacheStore {
       if (!root.exists()) {
          throw new CacheConfigurationException("Directory " + root.getAbsolutePath() + " does not exist and cannot be created!");
       }
-      streamBufferSize = config.getStreamBufferSize();
+      streamBufferSize = T.streamBufferSize();
 
-      FileCacheStoreConfig.FsyncMode fsyncMode = config.getFsyncMode();
+      FileCacheStoreConfigurationBuilder.FsyncMode fsyncMode = T.fsyncMode();
       switch (fsyncMode) {
          case DEFAULT:
             fileSync = new BufferedFileSync();
@@ -357,7 +355,7 @@ public class FileCacheStore extends BucketBasedCacheStore {
             fileSync = new PerWriteFileSync();
             break;
          case PERIODIC:
-            fileSync = new PeriodicFileSync(config.getFsyncInterval());
+            fileSync = new PeriodicFileSync(T.fsyncInterval());
             break;
       }
 

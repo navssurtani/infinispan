@@ -2,6 +2,8 @@ package org.infinispan.loaders;
 
 import org.infinispan.Cache;
 import org.infinispan.commons.marshall.StreamingMarshaller;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
+import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.util.TimeService;
 
 /**
@@ -11,11 +13,12 @@ import org.infinispan.util.TimeService;
  * @author Mircea.Markus@jboss.com
  * @since 4.0
  */
-public abstract class AbstractCacheLoader implements CacheLoader {
+public abstract class AbstractCacheLoader<T extends CacheLoaderConfiguration> implements CacheLoader <T>{
 
    protected volatile StreamingMarshaller marshaller;
    protected volatile Cache<Object, Object> cache;
    protected TimeService timeService;
+   protected T configuration;
 
    /**
     * {@inheritDoc} This implementation delegates to {@link CacheLoader#load(Object)}, to ensure that a response is
@@ -27,7 +30,8 @@ public abstract class AbstractCacheLoader implements CacheLoader {
    }
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(T config, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
       this.marshaller = m;
       if (config == null) throw new IllegalStateException("Null config!!!");
       this.cache = (Cache<Object, Object>) cache;

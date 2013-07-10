@@ -1,5 +1,6 @@
 package org.infinispan.loaders.bucket;
 
+import org.infinispan.configuration.cache.LockSupportStoreConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.LockSupportCacheStore;

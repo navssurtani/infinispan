@@ -1,6 +1,7 @@
 package org.infinispan.loaders;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.loaders.modifications.Modification;
 import org.infinispan.loaders.modifications.Remove;
 import org.infinispan.loaders.modifications.Store;
@@ -33,7 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Mircea.Markus@jboss.com
  * @since 4.0
  */
-public abstract class AbstractCacheStore extends AbstractCacheLoader implements CacheStore {
+public abstract class AbstractCacheStore <T extends CacheLoaderConfiguration> extends AbstractCacheLoader <T>
+      implements CacheStore {
 
    private static final Log log = LogFactory.getLog(AbstractCacheStore.class);
 
@@ -44,7 +46,7 @@ public abstract class AbstractCacheStore extends AbstractCacheLoader implements 
    protected boolean multiThreadedPurge = false;
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException{
+   public void init(T config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException{
       super.init(config, cache, m);
       this.config = (AbstractCacheStoreConfig) config;
    }
