@@ -20,6 +20,7 @@ import org.infinispan.loaders.AbstractCacheStore;
 import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheLoaderMetadata;
+import org.infinispan.loaders.hbase.configuration.HBaseCacheStoreConfiguration;
 import org.infinispan.loaders.keymappers.MarshallingTwoWayKey2StringMapper;
 import org.infinispan.loaders.keymappers.TwoWayKey2StringMapper;
 import org.infinispan.loaders.keymappers.UnsupportedKeyTypeException;
@@ -35,11 +36,9 @@ import org.infinispan.util.logging.LogFactory;
  * @author Justin Hayes
  * @since 5.2
  */
-@CacheLoaderMetadata(configurationClass = HBaseCacheStoreConfig.class)
-public class HBaseCacheStore extends AbstractCacheStore {
+public class HBaseCacheStore<T extends HBaseCacheStoreConfiguration> extends AbstractCacheStore<T> {
    private static final Log log = LogFactory.getLog(HBaseCacheStore.class, Log.class);
 
-   private HBaseCacheStoreConfig config;
    private String cacheName;
    private TwoWayKey2StringMapper keyMapper;
 
@@ -55,11 +54,10 @@ public class HBaseCacheStore extends AbstractCacheStore {
    private HBaseFacade hbf;
 
    @Override
-   public void init(CacheLoaderConfig clc, Cache<?, ?> cache, StreamingMarshaller m)
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m)
             throws CacheLoaderException {
-      super.init(clc, cache, m);
+      super.init(configuration, cache, m);
       this.cacheName = cache.getName();
-      this.config = (HBaseCacheStoreConfig) clc;
    }
 
    @Override
@@ -67,33 +65,33 @@ public class HBaseCacheStore extends AbstractCacheStore {
       log.debug("In HBaseCacheStore.start");
       try {
          // config for entries
-         entryTable = config.entryTable;
-         entryColumnFamily = config.entryColumnFamily;
-         entryValueField = config.entryValueField;
-         entryKeyPrefix = "e_" + (config.isSharedTable() ? cacheName + "_" : "");
+         entryTable = configuration.entryTable();
+         entryColumnFamily = configuration.entryColumnFamily();
+         entryValueField = configuration.entryValueField();
+         entryKeyPrefix = "e_" + (configuration.sharedTable() ? cacheName + "_" : "");
 
-         // config for expiration
-         expirationTable = config.expirationTable;
-         expirationKeyPrefix = "x_" + (config.isSharedTable() ? "_" + cacheName : "");
-         expirationColumnFamily = config.expirationColumnFamily;
-         expirationValueField = config.expirationValueField;
+         // configuration for expiration
+         expirationTable = configuration.expirationTable();
+         expirationKeyPrefix = "x_" + (configuration.sharedTable() ? "_" + cacheName : "");
+         expirationColumnFamily = configuration.expirationColumnFamily();
+         expirationValueField = configuration.expirationValueField();
 
-         keyMapper = (TwoWayKey2StringMapper) Util.getInstance(config.getKeyMapper(),
-                  config.getClassLoader());
+         keyMapper = (TwoWayKey2StringMapper) Util.getInstance(configuration.keyMapper(),
+                  configuration.getClass().getClassLoader());
          if(keyMapper instanceof MarshallingTwoWayKey2StringMapper) {
             ((MarshallingTwoWayKey2StringMapper)keyMapper).setMarshaller(getMarshaller());
          }
 
          Map<String, String> props = new HashMap<String, String>();
-         props.put("hbase.zookeeper.quorum", config.hbaseZookeeperQuorum);
-         props.put("hbase.zookeeper.property.clientPort", Integer.toString(config.hbaseZookeeperPropertyClientPort));
+         props.put("hbase.zookeeper.quorum", configuration.hbaseZookeeperQuorumHost());
+         props.put("hbase.zookeeper.property.clientPort", Integer.toString(configuration.hbaseZookeeperClientPort()));
          hbf = new HBaseFacade(props);
       } catch (Exception e) {
          throw new CacheConfigurationException(e);
       }
 
       // create the cache store table if necessary
-      if (config.autoCreateTable) {
+      if (configuration.autoCreateTable()) {
          log.infof("Automatically creating %s and %s tables.", this.entryTable,
                   this.expirationTable);
          // create required HBase structures (table and column families) for the cache
@@ -397,14 +395,6 @@ public class HBaseCacheStore extends AbstractCacheStore {
       }
 
       return unhashedKeys;
-   }
-
-   /**
-    * Returns the class that represents this cache store's configuration.
-    */
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
-      return HBaseCacheStoreConfig.class;
    }
 
    /**

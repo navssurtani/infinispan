@@ -11,6 +11,7 @@ import org.infinispan.loaders.bucket.BucketBasedCacheStore;
 import org.infinispan.loaders.jdbc.DataManipulationHelper;
 import org.infinispan.loaders.jdbc.JdbcUtil;
 import org.infinispan.loaders.jdbc.TableManipulation;
+import org.infinispan.loaders.jdbc.configuration.JdbcBinaryCacheStoreConfiguration;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactory;
 import org.infinispan.loaders.jdbc.logging.Log;
 import org.infinispan.commons.marshall.StreamingMarshaller;
@@ -47,36 +48,34 @@ import java.util.Set;
  * @see JdbcBinaryCacheStoreConfig
  * @see org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore
  */
-@CacheLoaderMetadata(configurationClass = JdbcBinaryCacheStoreConfig.class)
-public class JdbcBinaryCacheStore extends BucketBasedCacheStore {
+public class JdbcBinaryCacheStore<T extends JdbcBinaryCacheStoreConfiguration> extends BucketBasedCacheStore <T>{
 
    private static final Log log = LogFactory.getLog(JdbcBinaryCacheStore.class, Log.class);
 
    private final static byte BINARY_STREAM_DELIMITER = 100;
 
-   private JdbcBinaryCacheStoreConfig config;
    private ConnectionFactory connectionFactory;
    TableManipulation tableManipulation;
    private DataManipulationHelper dmHelper;
    private String cacheName;
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       if (log.isTraceEnabled()) {
-         log.tracef("Initializing JdbcBinaryCacheStore %s", config);
+         log.tracef("Initializing JdbcBinaryCacheStore %s", configuration.getClass().getName());
       }
-      super.init(config, cache, m);
-      this.config = (JdbcBinaryCacheStoreConfig) config;
+      super.init(configuration, cache, m);
       cacheName = cache.getName();
    }
 
    @Override
    public void start() throws CacheLoaderException {
       super.start();
-      String connectionFactoryClass = config.getConnectionFactoryConfig().getConnectionFactoryClass();
-      if (config.isManageConnectionFactory()) {
-         ConnectionFactory factory = ConnectionFactory.getConnectionFactory(connectionFactoryClass, config.getClassLoader());
-         factory.start(config.getConnectionFactoryConfig(), config.getClassLoader());
+      String connectionFactoryClass = configuration.connectionFactory().connectionFactoryClass().getName();
+      if (configuration.isManageConnectionFactory()) {
+         ConnectionFactory factory = ConnectionFactory.getConnectionFactory(connectionFactoryClass,
+                 configuration.getClass().getClassLoader());
+         factory.start(configuration.connectionFactory(), configuration.getClass().getClassLoader());
          doConnectionFactoryInitialization(factory);
       }
       dmHelper = new DataManipulationHelper(connectionFactory, tableManipulation, marshaller, timeService) {
@@ -161,7 +160,7 @@ public class JdbcBinaryCacheStore extends BucketBasedCacheStore {
       }
 
       try {
-         if (config.isManageConnectionFactory()) {
+         if (?) {
             log.tracef("Stopping mananged connection factory: %s", connectionFactory);
             connectionFactory.stop();
          }
@@ -470,11 +469,6 @@ public class JdbcBinaryCacheStore extends BucketBasedCacheStore {
       }
    }
 
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
-      return JdbcBinaryCacheStoreConfig.class;
-   }
-
    public ConnectionFactory getConnectionFactory() {
       return connectionFactory;
    }
@@ -487,8 +481,7 @@ public class JdbcBinaryCacheStore extends BucketBasedCacheStore {
     */
    public void doConnectionFactoryInitialization(ConnectionFactory connectionFactory) throws CacheLoaderException {
       this.connectionFactory = connectionFactory;
-      tableManipulation = config.getTableManipulation();
-      tableManipulation.setCacheName(cacheName);
+      tableManipulation.setCacheName(configuration.table().cacheName());
       tableManipulation.start(connectionFactory);
    }
 

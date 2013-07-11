@@ -115,8 +115,7 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 		}
 	}
 
-	@Override
-	public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+	private Class<? extends CacheLoaderConfig> getConfiguration() {
 		return JpaCacheStoreConfig.class;
 	}
 

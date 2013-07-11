@@ -31,8 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@CacheLoaderMetadata(configurationClass = DummyInMemoryCacheStore.Cfg.class)
-public class DummyInMemoryCacheStore extends AbstractCacheStore {
+public class DummyInMemoryCacheStore<T extends DummyInMemoryCacheStoreConfiguration> extends AbstractCacheStore <T>{
    private static final Log log = LogFactory.getLog(DummyInMemoryCacheStore.class);
    private static final boolean trace = log.isTraceEnabled();
    private static final boolean debug = log.isDebugEnabled();
@@ -43,7 +42,6 @@ public class DummyInMemoryCacheStore extends AbstractCacheStore {
    Map<Object, byte[]> store;
    // When a store is 'shared', multiple nodes could be trying to update it concurrently.
    ConcurrentMap<String, AtomicInteger> stats;
-   Cfg config;
 
    public DummyInMemoryCacheStore(String storeName) {
       this.storeName = storeName;
@@ -64,7 +62,7 @@ public class DummyInMemoryCacheStore extends AbstractCacheStore {
       }
       if (ed != null) {
          if (debug) log.debugf("Store %s in dummy map store@%s", ed, Util.hexIdHashCode(store));
-         config.failIfNeeded(ed.getKey());
+         configuration.failKey();
          store.put(ed.getKey(), serializeEntry(ed));
       }
    }
@@ -149,10 +147,9 @@ public class DummyInMemoryCacheStore extends AbstractCacheStore {
    }
 
    @Override
-   public void init(CacheLoaderConfig config, Cache cache, StreamingMarshaller m) throws CacheLoaderException {
-      super.init(config, cache, m);
-      this.config = (Cfg) config;
-      storeName = this.config.getStoreName();
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+      super.init(configuration, cache, m);
+      storeName = configuration.storeName();
       if (marshaller == null) marshaller = new TestObjectStreamMarshaller();
    }
 
@@ -219,12 +216,6 @@ public class DummyInMemoryCacheStore extends AbstractCacheStore {
    }
 
    @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
-      record("getConfigurationClass");
-      return Cfg.class;
-   }
-
-   @Override
    public void start() throws CacheLoaderException {
       super.start();
 
@@ -269,8 +260,7 @@ public class DummyInMemoryCacheStore extends AbstractCacheStore {
       record("stop");
       super.stop();
 
-      if (config.isPurgeOnStartup()) {
-         String storeName = config.getStoreName();
+      if (configuration.purgeOnStartup()) {
          if (storeName != null) {
             stores.remove(storeName);
          }

@@ -2,6 +2,7 @@ package org.infinispan.loaders.jdbc.connectionfactory;
 
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.commons.util.Util;
+import org.infinispan.loaders.jdbc.configuration.ConnectionFactoryConfiguration;
 
 import java.sql.Connection;
 
@@ -23,7 +24,8 @@ public abstract class ConnectionFactory {
    /**
     * Starts the connection factory. A pooled factory might be create connections here.
     */
-   public abstract void start(ConnectionFactoryConfig config, ClassLoader classLoader) throws CacheLoaderException;
+   public abstract void start(ConnectionFactoryConfiguration factoryConfiguration, ClassLoader classLoader) throws
+           CacheLoaderException;
 
    /**
     * Closes the connection factory, including all allocated connections etc.

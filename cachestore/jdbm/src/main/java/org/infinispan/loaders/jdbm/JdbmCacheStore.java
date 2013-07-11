@@ -72,8 +72,7 @@ public class JdbmCacheStore extends AbstractCacheStore {
    private HTree tree;
    private BTree expiryTree;
 
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+   private Class<? extends CacheLoaderConfig> getConfiguration() {
       return JdbmCacheStoreConfig.class;
    }
 

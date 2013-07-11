@@ -608,7 +608,7 @@ public abstract class BaseCacheStoreTest extends AbstractInfinispanTest {
    }
 
    public void testConfigFile() throws Exception {
-      Class<? extends CacheLoaderConfig> cfgClass = cs.getConfigurationClass();
+      Class<? extends CacheLoaderConfig> cfgClass = cs.getConfiguration();
       CacheLoaderConfig clc = Util.getInstance(cfgClass);
       assert clc.getCacheLoaderClassName().equals(cs.getClass().getName()) : "Cache loaders doesn't provide a proper configuration type that is capable of creating the loaders!";
    }

@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since 4.0
  */
 public abstract class AbstractCacheStore <T extends CacheLoaderConfiguration> extends AbstractCacheLoader <T>
-      implements CacheStore {
+      implements CacheStore<T> {
 
    private static final Log log = LogFactory.getLog(AbstractCacheStore.class);
 
@@ -157,11 +157,6 @@ public abstract class AbstractCacheStore <T extends CacheLoaderConfiguration> ex
    }
 
    @Override
-   public CacheStoreConfig getCacheStoreConfig() {
-      return config;
-   }
-
-   @Override
    public void commit(GlobalTransaction tx) throws CacheLoaderException {
       List<? extends Modification> list = transactions.remove(tx);
       if (list != null && !list.isEmpty()) applyModifications(list);
@@ -172,6 +167,11 @@ public abstract class AbstractCacheStore <T extends CacheLoaderConfiguration> ex
       if (keys != null && !keys.isEmpty()) {
          for (Object key : keys) remove(key);
       }
+   }
+
+   @Override
+   public T getConfiguration() {
+       return configuration;
    }
 
    protected static void safeClose(InputStream stream) throws CacheLoaderException {

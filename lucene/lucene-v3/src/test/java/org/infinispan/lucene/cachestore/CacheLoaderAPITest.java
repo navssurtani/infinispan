@@ -335,7 +335,7 @@ public class CacheLoaderAPITest extends SingleCacheManagerTest {
       LuceneCacheLoader cacheLoader = (LuceneCacheLoader) TestingUtil.extractComponent(cacheManager.getCache(),
                                                                     CacheLoaderManager.class).getCacheLoader();
 
-      AssertJUnit.assertSame(cacheLoader.getConfigurationClass(), LuceneCacheLoaderConfig.class);
+      AssertJUnit.assertSame(cacheLoader.getConfiguration(), LuceneCacheLoaderConfig.class);
    }
 
    @DataProvider(name = "passEntriesCount")

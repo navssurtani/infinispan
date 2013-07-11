@@ -122,30 +122,7 @@ public class BdbjeCacheStoreConfig extends AbstractCacheStoreConfig {
          return cacheName;
       }
    }
-
-   public String getEnvironmentPropertiesFile() {
-      return environmentPropertiesFile;
-   }
-
    public void setEnvironmentPropertiesFile(String environmentPropertiesFile) {
       this.environmentPropertiesFile = environmentPropertiesFile;
-   }
-
-   public Properties readEnvironmentProperties() throws CacheLoaderException {
-      if (environmentPropertiesFile == null || environmentPropertiesFile.trim().length() == 0) return null;
-      InputStream i = FileLookupFactory.newInstance().lookupFile(environmentPropertiesFile, getClassLoader());
-      if (i != null) {
-         Properties p = new Properties();
-         try {
-            p.load(i);
-         } catch (IOException ioe) {
-            throw new CacheLoaderException("Unable to read environment properties file " + environmentPropertiesFile, ioe);
-         } finally {
-            Util.close(i);
-         }
-         return p;
-      } else {
-         return null;
-      }
    }
 }

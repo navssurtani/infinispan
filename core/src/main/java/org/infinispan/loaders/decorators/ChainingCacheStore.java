@@ -10,7 +10,6 @@ import org.infinispan.loaders.CacheLoader;
 import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheStore;
-import org.infinispan.loaders.CacheStoreConfig;
 import org.infinispan.loaders.modifications.Modification;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.transaction.xa.GlobalTransaction;
@@ -251,8 +250,7 @@ public class ChainingCacheStore implements CacheStore {
       return false;
    }
 
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+   private Class<? extends CacheLoaderConfig> getConfiguration() {
       return null;
    }
 
@@ -306,11 +304,6 @@ public class ChainingCacheStore implements CacheStore {
       } finally {
          loadersAndStoresMutex.readLock().unlock();
       }
-   }
-
-   @Override
-   public CacheStoreConfig getCacheStoreConfig() {
-      return null;
    }
 
    public void removeCacheLoader(String loaderType) {

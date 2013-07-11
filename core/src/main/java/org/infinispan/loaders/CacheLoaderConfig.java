@@ -115,7 +115,7 @@ class CacheLoaderConfigAdapter extends XmlAdapter<AbstractCacheStoreConfig, Cach
       CacheLoaderMetadata metadata = clazz.getAnnotation(CacheLoaderMetadata.class);
       if (metadata == null) {
          CacheLoader cl = (CacheLoader) Util.getInstance(clazz);
-         cacheLoaderConfigType = cl.getConfigurationClass();
+         cacheLoaderConfigType = cl.getConfiguration();
       } else {
          cacheLoaderConfigType = metadata.configurationClass();
       }

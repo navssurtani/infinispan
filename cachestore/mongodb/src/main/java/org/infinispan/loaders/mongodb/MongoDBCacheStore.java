@@ -232,8 +232,7 @@ public class MongoDBCacheStore extends AbstractCacheStore {
       return values;
    }
 
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+   private Class<? extends CacheLoaderConfig> getConfiguration() {
       return MongoDBCacheStoreConfig.class;
    }
 

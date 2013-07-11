@@ -1,9 +1,10 @@
 package org.infinispan.loaders.bucket;
 
-import org.infinispan.configuration.cache.LockSupportStoreConfiguration;
+import org.infinispan.loaders.LockSupportCacheStore;
+
+import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.LockSupportCacheStore;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -25,7 +26,8 @@ import java.util.Set;
  * @author <a href="http://gleamynode.net/">Trustin Lee</a>
  * @since 4.0
  */
-public abstract class BucketBasedCacheStore extends LockSupportCacheStore<Integer> {
+public abstract class BucketBasedCacheStore <T extends CacheStoreConfiguration> extends
+        LockSupportCacheStore<Integer, T> {
 
    /**
     * Loads an entry from a Bucket, locating the relevant Bucket using the key's hash code.

@@ -21,12 +21,10 @@ import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.infinispan.Cache;
 import org.infinispan.container.entries.InternalCacheEntry;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
-import org.infinispan.loaders.CacheStoreConfig;
 import org.infinispan.loaders.bucket.Bucket;
 import org.infinispan.loaders.bucket.BucketBasedCacheStore;
+import org.infinispan.loaders.cloud.configuration.CloudCacheStoreConfiguration;
 import org.infinispan.loaders.cloud.logging.Log;
 import org.infinispan.loaders.modifications.Modification;
 import org.infinispan.commons.CacheConfigurationException;
@@ -62,11 +60,9 @@ import com.google.common.collect.Maps;
  * @author Adrian Cole
  * @since 4.0
  */
-@CacheLoaderMetadata(configurationClass = CloudCacheStoreConfig.class)
-public class CloudCacheStore extends BucketBasedCacheStore {
+public class CloudCacheStore<T extends CloudCacheStoreConfiguration> extends BucketBasedCacheStore<T> {
    static final Log log = LogFactory.getLog(CloudCacheStore.class, Log.class);
    final ThreadLocal<List<Future<?>>> asyncCommandFutures = new ThreadLocal<List<Future<?>>>();
-   CloudCacheStoreConfig cfg;
    String containerName;
    BlobStoreContext ctx;
    BlobStore blobStore;
@@ -76,7 +72,7 @@ public class CloudCacheStore extends BucketBasedCacheStore {
    protected static final String EARLIEST_EXPIRY_TIME = "metadata_eet";
    private MessageDigest md5;
 
-   public CloudCacheStore() {
+   public CloudCacheStore() throws CacheLoaderException {
       try {
          md5 = MessageDigest.getInstance("MD5");
       } catch (NoSuchAlgorithmException ignore) {
@@ -84,13 +80,8 @@ public class CloudCacheStore extends BucketBasedCacheStore {
       }
    }
 
-   @Override
-   public Class<? extends CacheStoreConfig> getConfigurationClass() {
-      return CloudCacheStoreConfig.class;
-   }
-
    private String getThisContainerName() {
-      return cfg.getBucketPrefix() + "-"
+      return configuration.bucketPrefix() + "-"
             + cache.getName().toLowerCase().replace("_", "").replace(".", "");
    }
 
@@ -100,17 +91,15 @@ public class CloudCacheStore extends BucketBasedCacheStore {
    }
 
    @Override
-   public void init(CacheLoaderConfig cfg, Cache<?, ?> cache, StreamingMarshaller m)
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m)
          throws CacheLoaderException {
-      this.cfg = (CloudCacheStoreConfig) cfg;
-      init(cfg, cache, m, null, null, null, true);
+      init(configuration, cache, m, null, null, null, true);
    }
 
-   public void init(CacheLoaderConfig cfg, Cache<?, ?> cache, StreamingMarshaller m, BlobStoreContext ctx,
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m, BlobStoreContext ctx,
                     BlobStore blobStore, AsyncBlobStore asyncBlobStore, boolean constructInternalBlobstores)
          throws CacheLoaderException {
-      super.init(cfg, cache, m);
-      this.cfg = (CloudCacheStoreConfig) cfg;
+      super.init(configuration, cache, m);
       marshaller = m;
       this.ctx = ctx;
       this.blobStore = blobStore;
@@ -122,51 +111,52 @@ public class CloudCacheStore extends BucketBasedCacheStore {
    public void start() throws CacheLoaderException {
       super.start();
       if (constructInternalBlobstores) {
-         if (cfg.getCloudService() == null) {
+         if (configuration.cloudService() == null) {
             throw new CacheConfigurationException("CloudService must be set!");
-        }
-         if (cfg.getIdentity() == null) {
+         }
+         if (configuration.identity() == null) {
             throw new CacheConfigurationException("Identity must be set");
-        }
-         if (cfg.getPassword() == null) {
+         }
+         if (configuration.password() == null) {
             throw new CacheConfigurationException("Password must be set");
-        }
+         }
       }
-      if (cfg.getBucketPrefix() == null) {
-        throw new CacheConfigurationException("CloudBucket must be set");
-    }
+      if (configuration.bucketPrefix() == null) {
+         throw new CacheConfigurationException("CloudBucket must be set");
+      }
       containerName = getThisContainerName();
       try {
          if (constructInternalBlobstores) {
             // add an executor as a constructor param to
             // EnterpriseConfigurationModule, pass
             // property overrides instead of Properties()
-            ctx = new BlobStoreContextFactory().createContext(cfg.getCloudService(), cfg
-                  .getIdentity(), cfg.getPassword(), ImmutableSet.of(
+            ctx = new BlobStoreContextFactory().createContext(configuration.cloudService(), configuration
+                  .identity(), configuration.password(), ImmutableSet.of(
                   new EnterpriseConfigurationModule(), new Log4JLoggingModule()),
-                                                              new Properties());
+                  new Properties());
             blobStore = ctx.getBlobStore();
             asyncBlobStore = ctx.getAsyncBlobStore();
          }
 
          if (!blobStore.containerExists(containerName)) {
             Location chosenLoc = null;
-            if (cfg.getCloudServiceLocation() != null && cfg.getCloudServiceLocation().trim().length() > 0) {
+            if (configuration.cloudServiceLocation() != null && configuration.cloudServiceLocation().trim().length() >
+                  0) {
                Map<String, ? extends Location> idToLocation = Maps.uniqueIndex(blobStore.listAssignableLocations(), new Function<Location, String>() {
                   @Override
                   public String apply(Location input) {
                      return input.getId();
                   }
                });
-               String loc = cfg.getCloudServiceLocation().trim().toLowerCase();
+               String loc = configuration.cloudServiceLocation().trim().toLowerCase();
                chosenLoc = idToLocation.get(loc);
                if (chosenLoc == null) {
-                  log.unableToConfigureCloudService(loc, cfg.getCloudService(), idToLocation.keySet());
+                  log.unableToConfigureCloudService(loc, configuration.cloudService(), idToLocation.keySet());
                }
             }
             blobStore.createContainerInLocation(chosenLoc, containerName);
+            pollFutures = !configuration.async().enabled();
          }
-         pollFutures = !cfg.getAsyncStoreConfig().isEnabled();
       } catch (RuntimeException ioe) {
          throw new CacheLoaderException("Unable to create context", ioe);
       }
@@ -260,7 +250,7 @@ public class CloudCacheStore extends BucketBasedCacheStore {
          long lastExpirableEntry = readLastExpirableEntryFromMetadata(sm.getUserMetadata());
          if (lastExpirableEntry < currentTime) {
             scanBlobForExpiredEntries(sm.getName());
-        }
+         }
       }
    }
 
@@ -276,7 +266,7 @@ public class CloudCacheStore extends BucketBasedCacheStore {
                } finally {
                   downgradeLock(bucket.getBucketId());
                }
-           }
+            }
          } else {
             throw new CacheLoaderException("Blob not found: " + blobName);
          }
@@ -296,7 +286,7 @@ public class CloudCacheStore extends BucketBasedCacheStore {
 
    @Override
    protected void purgeInternal() throws CacheLoaderException {
-      if (!cfg.isLazyPurgingOnly()) {
+      if (!configuration.lazyPurgingOnly()) {
          boolean success = acquireGlobalLock(false);
          try {
             if (multiThreadedPurge) {
@@ -390,12 +380,12 @@ public class CloudCacheStore extends BucketBasedCacheStore {
 
       try {
          final byte[] payloadBuffer = marshaller.objectToByteBuffer(bucket);
-         if (cfg.isCompress()) {
+         if (configuration.compress()) {
             final byte[] compress = compress(payloadBuffer, blob);
             blob.setPayload(compress);
          } else {
             blob.setPayload(payloadBuffer);
-        }
+         }
          if (earliestExpiryTime > -1) {
             Map<String, String> md = Collections.singletonMap(EARLIEST_EXPIRY_TIME, String
                   .valueOf(earliestExpiryTime));
@@ -406,19 +396,19 @@ public class CloudCacheStore extends BucketBasedCacheStore {
       } catch (InterruptedException ie) {
          if (log.isTraceEnabled()) {
             log.trace("Interrupted while writing blob");
-        }
+         }
          Thread.currentThread().interrupt();
       }
    }
 
    private Bucket readFromBlob(Blob blob, String bucketName) throws CacheLoaderException {
       if (blob == null) {
-        return null;
+         return null;
       }
       try {
          Bucket bucket;
          final InputStream content = blob.getPayload().getInput();
-         if (cfg.isCompress()) {
+         if (configuration.compress()) {
             bucket = uncompress(blob, bucketName, content);
          } else {
             bucket = (Bucket) marshaller.objectFromInputStream(content);
@@ -454,7 +444,7 @@ public class CloudCacheStore extends BucketBasedCacheStore {
       byte[] md5FromStoredBlob = blob.getMetadata().getContentMetadata().getContentMD5();
 
       // not all blobstores support md5 on GET request
-      if (md5FromStoredBlob != null){
+      if (md5FromStoredBlob != null) {
          byte[] hash = getMd5Digest(compressedByteArray);
          if (!Arrays.equals(hash, md5FromStoredBlob)) {
             throw new CacheLoaderException("MD5 hash failed when reading (transfer error) for entry " + bucketName);
@@ -494,8 +484,8 @@ public class CloudCacheStore extends BucketBasedCacheStore {
 
    private String encodeBucketName(String bucketId) {
       final String name = bucketId.startsWith("-") ? bucketId.replace('-', 'A')
-                                                   : bucketId;
-      if (cfg.isCompress()) {
+            : bucketId;
+      if (configuration.compress()) {
          return name + ".bz2";
       }
       return name;

@@ -70,7 +70,7 @@ public class BdbjeCacheStoreTest {
       }
 
       @Override
-      public Environment createEnvironment(File envLocation, Properties environmentProperties) throws DatabaseException {
+      public Environment createEnvironment(File envLocation) throws DatabaseException {
          return env;
       }
 
@@ -151,7 +151,7 @@ public class BdbjeCacheStoreTest {
    }
 
    public void testGetConfigurationClass() throws Exception {
-      assert cs.getConfigurationClass().equals(BdbjeCacheStoreConfig.class);
+      assert cs.getConfiguration().equals(BdbjeCacheStoreConfig.class);
    }
 
    public void testInitNoMock() throws Exception {

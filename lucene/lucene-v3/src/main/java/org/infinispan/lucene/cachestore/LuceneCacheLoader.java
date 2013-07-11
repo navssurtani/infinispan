@@ -154,7 +154,7 @@ public class LuceneCacheLoader implements CacheLoader {
    }
 
    @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+   public Class<? extends CacheLoaderConfig> getConfiguration() {
       return LuceneCacheLoaderConfig.class;
    }
 

@@ -33,16 +33,15 @@ import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.SuperColumn;
 import org.infinispan.Cache;
+import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
 import org.infinispan.loaders.AbstractCacheStore;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
+import org.infinispan.loaders.cassandra.configuration.CassandraCacheStoreConfiguration;
 import org.infinispan.loaders.cassandra.logging.Log;
 import org.infinispan.loaders.keymappers.TwoWayKey2StringMapper;
 import org.infinispan.loaders.keymappers.UnsupportedKeyTypeException;
-import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.commons.util.Util;
 import org.infinispan.util.logging.LogFactory;
@@ -53,8 +52,7 @@ import org.infinispan.util.logging.LogFactory;
  *
  * @author Tristan Tarrant
  */
-@CacheLoaderMetadata(configurationClass = CassandraCacheStoreConfig.class)
-public class CassandraCacheStore extends AbstractCacheStore {
+public class CassandraCacheStore <T extends CassandraCacheStoreConfiguration> extends AbstractCacheStore <T> {
 
    private static final String ENTRY_KEY_PREFIX = "entry_";
    private static final String ENTRY_COLUMN_NAME = "entry";
@@ -62,8 +60,6 @@ public class CassandraCacheStore extends AbstractCacheStore {
    private static final int SLICE_SIZE = 100;
    private static final Log log = LogFactory.getLog(CassandraCacheStore.class, Log.class);
    private static final boolean trace = log.isTraceEnabled();
-
-   private CassandraCacheStoreConfig config;
 
    private DataSource dataSource;
 
@@ -81,47 +77,42 @@ public class CassandraCacheStore extends AbstractCacheStore {
    static private Charset UTF8Charset = Charset.forName("UTF-8");
 
    @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
-      return CassandraCacheStoreConfig.class;
-   }
-
-   @Override
-   public void init(CacheLoaderConfig clc, Cache<?, ?> cache, StreamingMarshaller m)
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m)
             throws CacheLoaderException {
-      super.init(clc, cache, m);
+      super.init(configuration, cache, m);
       this.cacheName = cache.getName();
-      this.config = (CassandraCacheStoreConfig) clc;
    }
 
    @Override
    public void start() throws CacheLoaderException {
 
       try {
-         if (!config.autoCreateKeyspace)
-            config.poolProperties.setKeySpace(config.keySpace);
-         dataSource = new DataSource(config.getPoolProperties());
-         readConsistencyLevel = ConsistencyLevel.valueOf(config.readConsistencyLevel);
-         writeConsistencyLevel = ConsistencyLevel.valueOf(config.writeConsistencyLevel);
-         entryColumnPath = new ColumnPath(config.entryColumnFamily).setColumn(ENTRY_COLUMN_NAME
+         if (!configuration.autoCreateKeyspace())
+            configuration.poolProperties.setKeySpace(configuration.keySpace());
+         dataSource = new DataSource(configuration.getPoolProperties());
+         readConsistencyLevel = configuration.readConsistencyLevel();
+         writeConsistencyLevel = configuration.writeConsistencyLevel();
+         entryColumnPath = new ColumnPath(configuration.entryColumnFamily()).setColumn(ENTRY_COLUMN_NAME
                   .getBytes(UTF8Charset));
-         entryColumnParent = new ColumnParent(config.entryColumnFamily);
-         entryKeyPrefix = ENTRY_KEY_PREFIX + (config.isSharedKeyspace() ? cacheName + "_" : "");
-         expirationColumnParent = new ColumnParent(config.expirationColumnFamily);
+         entryColumnParent = new ColumnParent(configuration.entryColumnFamily());
+         entryKeyPrefix = ENTRY_KEY_PREFIX + (configuration.sharedKeyspace() ? cacheName + "_" : "");
+         expirationColumnParent = new ColumnParent(configuration.expirationColumnFamily());
          expirationKey = ByteBufferUtil.bytes(EXPIRATION_KEY
-                  + (config.isSharedKeyspace() ? "_" + cacheName : ""));
-         keyMapper = (TwoWayKey2StringMapper) Util.getInstance(config.getKeyMapper(), config.getClassLoader());
+                  + (configuration.sharedKeyspace() ? "_" + cacheName : ""));
+         keyMapper = (TwoWayKey2StringMapper) Util.getInstance(configuration.keyMapper(),
+               configuration.getClass().getClassLoader());
       } catch (Exception e) {
          throw new CacheConfigurationException(e);
       }
 
-      if (config.autoCreateKeyspace) {
+      if (configuration.autoCreateKeyspace()) {
          log.debug("automatically create keyspace");
          try {
             createKeySpace();
          } finally {
             dataSource.close(); // Make sure all connections are closed
          }
-         dataSource.setKeySpace(config.keySpace); // Set the keyspace we have
+         dataSource.setKeySpace(configuration.keySpace()); // Set the keyspace we have
                                                   // created
       }
 
@@ -138,25 +129,25 @@ public class CassandraCacheStore extends AbstractCacheStore {
          cassandraClient = dataSource.getConnection();
          // check if the keyspace exists
          try {
-            cassandraClient.describe_keyspace(config.keySpace);
+            cassandraClient.describe_keyspace(configuration.keySpace());
             return;
          } catch (NotFoundException e) {
             KsDef keySpace = new KsDef();
-            keySpace.setName(config.keySpace);
+            keySpace.setName(configuration.keySpace());
             keySpace.setStrategy_class("org.apache.cassandra.locator.SimpleStrategy");
             Map<String, String> strategy_options = new HashMap<String, String>();
             strategy_options.put("replication_factor", "1");
             keySpace.setStrategy_options(strategy_options);
 
             CfDef entryCF = new CfDef();
-            entryCF.setName(config.entryColumnFamily);
-            entryCF.setKeyspace(config.keySpace);
+            entryCF.setName(configuration.entryColumnFamily());
+            entryCF.setKeyspace(configuration.keySpace());
             entryCF.setComparator_type("BytesType");
             keySpace.addToCf_defs(entryCF);
 
             CfDef expirationCF = new CfDef();
-            expirationCF.setName(config.expirationColumnFamily);
-            expirationCF.setKeyspace(config.keySpace);
+            expirationCF.setName(configuration.expirationColumnFamily());
+            expirationCF.setKeyspace(configuration.keySpace());
             expirationCF.setColumn_type("Super");
             expirationCF.setComparator_type("LongType");
             expirationCF.setSubcomparator_type("BytesType");
@@ -377,7 +368,7 @@ public class CassandraCacheStore extends AbstractCacheStore {
    }
 
    private void remove0(ByteBuffer key, Map<ByteBuffer, Map<String, List<Mutation>>> mutationMap) {
-      addMutation(mutationMap, key, config.entryColumnFamily, null, null);
+      addMutation(mutationMap, key, configuration.entryColumnFamily(), null, null);
    }
 
    private byte[] marshall(InternalCacheEntry entry) throws IOException, InterruptedException {
@@ -418,7 +409,7 @@ public class CassandraCacheStore extends AbstractCacheStore {
          log.tracef("store(\"%s\") ", key);
       String cassandraKey = hashKey(key);
       try {
-         addMutation(mutationMap, ByteBufferUtil.bytes(cassandraKey), config.entryColumnFamily,
+         addMutation(mutationMap, ByteBufferUtil.bytes(cassandraKey), configuration.entryColumnFamily(),
                   ByteBuffer.wrap(entryColumnPath.getColumn()), ByteBuffer.wrap(marshall(entry)));
          if (entry.canExpire()) {
             addExpiryEntry(cassandraKey, entry.getExpiryTime(), mutationMap);
@@ -433,7 +424,7 @@ public class CassandraCacheStore extends AbstractCacheStore {
    private void addExpiryEntry(String cassandraKey, long expiryTime,
             Map<ByteBuffer, Map<String, List<Mutation>>> mutationMap) {
       try {
-         addMutation(mutationMap, expirationKey, config.expirationColumnFamily,
+         addMutation(mutationMap, expirationKey, configuration.expirationColumnFamily(),
                   ByteBufferUtil.bytes(expiryTime), ByteBufferUtil.bytes(cassandraKey),
                   ByteBufferUtil.EMPTY_BYTE_BUFFER);
       } catch (Exception e) {
@@ -487,7 +478,7 @@ public class CassandraCacheStore extends AbstractCacheStore {
 
    /**
     * Purge expired entries. Expiration entries are stored in a single key (expirationKey) within a
-    * specific ColumnFamily (set by configuration). The entries are grouped by expiration timestamp
+    * specific ColumnFamily (set by configurationuration). The entries are grouped by expiration timestamp
     * in SuperColumns within which each entry's key is mapped to a column
     */
    @Override
@@ -518,7 +509,7 @@ public class CassandraCacheStore extends AbstractCacheStore {
                   remove0(ByteBuffer.wrap(col.getName()), mutationMap);
                }
                // Remove the expiration supercolumn
-               addMutation(mutationMap, expirationKey, config.expirationColumnFamily,
+               addMutation(mutationMap, expirationKey, configuration.expirationColumnFamily(),
                         ByteBuffer.wrap(scol.getName()), null, null);
             }
             cassandraClient.batch_mutate(mutationMap, writeConsistencyLevel);

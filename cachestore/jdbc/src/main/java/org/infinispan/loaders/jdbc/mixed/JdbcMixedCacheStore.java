@@ -174,8 +174,7 @@ public class JdbcMixedCacheStore extends AbstractCacheStore {
       stringBasedCacheStore.clear();
    }
 
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+   private Class<? extends CacheLoaderConfig> getConfiguration() {
       return JdbcMixedCacheStoreConfig.class;
    }
 

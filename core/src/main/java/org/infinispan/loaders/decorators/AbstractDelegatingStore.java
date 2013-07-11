@@ -2,13 +2,12 @@ package org.infinispan.loaders.decorators;
 
 import org.infinispan.Cache;
 import org.infinispan.commons.marshall.StreamingMarshaller;
+import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.transaction.xa.GlobalTransaction;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.CacheLoader;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheStore;
-import org.infinispan.loaders.CacheStoreConfig;
 import org.infinispan.loaders.modifications.Modification;
 
 import java.io.ObjectInput;
@@ -23,15 +22,12 @@ import java.util.Set;
  * @author Manik Surtani
  * @since 4.0
  */
-public class AbstractDelegatingStore implements CacheStore {
+public class AbstractDelegatingStore<T extends CacheStoreConfiguration> implements CacheStore <T> {
 
    CacheStore delegate;
+   T configuration;
 
    public AbstractDelegatingStore(CacheStore delegate) {
-      this.delegate = delegate;
-   }
-
-   public void setDelegate(CacheStore delegate) {
       this.delegate = delegate;
    }
 
@@ -94,8 +90,8 @@ public class AbstractDelegatingStore implements CacheStore {
    }
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
-      delegate.init(config, cache, m);
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+      delegate.init(configuration, cache, m);
    }
 
    @Override
@@ -124,11 +120,6 @@ public class AbstractDelegatingStore implements CacheStore {
    }
 
    @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
-      return delegate.getConfigurationClass();
-   }
-
-   @Override
    public void start() throws CacheLoaderException {
       delegate.start();
    }
@@ -139,7 +130,9 @@ public class AbstractDelegatingStore implements CacheStore {
    }
 
    @Override
-   public CacheStoreConfig getCacheStoreConfig() {
-      return delegate.getCacheStoreConfig();
+   public T getConfiguration() {
+      return configuration;
    }
+
+
 }

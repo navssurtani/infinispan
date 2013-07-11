@@ -11,6 +11,7 @@ import com.sleepycat.util.ExceptionUnwrapper;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.commons.CacheException;
 import org.infinispan.commons.marshall.StreamingMarshaller;
+import org.infinispan.loaders.bdbje.configuration.BdbjeCacheStoreConfiguration;
 import org.infinispan.util.logging.Log;
 import org.infinispan.util.logging.LogFactory;
 
@@ -28,18 +29,19 @@ public class BdbjeResourceFactory {
     private static final Log log = LogFactory.getLog(BdbjeResourceFactory.class);
     private static final boolean trace = log.isTraceEnabled();
 
-    private BdbjeCacheStoreConfig config;
+    private BdbjeCacheStoreConfiguration configuration;
 
-    public BdbjeResourceFactory(BdbjeCacheStoreConfig config) {
-        this.config = config;
-    }
+   public BdbjeResourceFactory(BdbjeCacheStoreConfiguration configuration) {
+      this.configuration = configuration;
+   }
 
-    /**
+
+   /**
      * @return PreparableTransactionRunner that will try to resolve deadlocks maximum of {@link
      *         BdbjeCacheStoreConfig#getMaxTxRetries()} times.
      */
     public PreparableTransactionRunner createPreparableTransactionRunner(Environment env) {
-        return new PreparableTransactionRunner(env, config.getMaxTxRetries(), null);
+        return new PreparableTransactionRunner(env, configuration.maxTxRetries(), null);
     }
 
     public CurrentTransaction createCurrentTransaction(Environment env) {
@@ -53,11 +55,11 @@ public class BdbjeResourceFactory {
      * @return open Environment with a lock timeout of {@link org.infinispan.loaders.bdbje.BdbjeCacheStoreConfig#getLockAcquistionTimeout()}
      *         milliseconds.
      */
-    public Environment createEnvironment(File envLocation, Properties environmentProperties) throws DatabaseException {
-        EnvironmentConfig envConfig = environmentProperties == null ? new EnvironmentConfig() : new EnvironmentConfig(environmentProperties);
+    public Environment createEnvironment(File envLocation) throws DatabaseException {
+        EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);
         envConfig.setTransactional(true);
-        envConfig.setLockTimeout(config.getLockAcquistionTimeout(), TimeUnit.MILLISECONDS);
+        envConfig.setLockTimeout(configuration.lockAcquisitionTimeout(), TimeUnit.MILLISECONDS);
         if (trace) log.tracef("opening or creating je environment at %s", envLocation);
         Environment env = new Environment(envLocation, envConfig);
         log.debugf("opened je environment at %s", envLocation);
@@ -66,7 +68,7 @@ public class BdbjeResourceFactory {
 
     public StoredClassCatalog createStoredClassCatalog(Database catalogDb) throws DatabaseException {
         StoredClassCatalog catalog = new StoredClassCatalog(catalogDb);
-        log.debugf("created stored class catalog from database %s", config.getCatalogDbName());
+        log.debugf("created stored class catalog from database %s", configuration.catalogDbName());
         return catalog;
     }
 

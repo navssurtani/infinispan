@@ -110,8 +110,7 @@ public class ClusterCacheLoader extends AbstractCacheLoader {
       //nothing to do here
    }
 
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+   private Class<? extends CacheLoaderConfig> getConfiguration() {
       return ClusterCacheLoaderConfig.class;
    }
 

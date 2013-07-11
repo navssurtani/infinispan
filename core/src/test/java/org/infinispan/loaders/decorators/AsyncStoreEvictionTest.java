@@ -54,8 +54,7 @@ public class AsyncStoreEvictionTest {
          STORE.set(this);
       }
 
-      @Override
-      public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+      private Class<? extends CacheLoaderConfig> getConfiguration() {
          return LockableCacheStoreConfig.class;
       }
 

@@ -17,9 +17,8 @@ import com.sleepycat.util.ExceptionUnwrapper;
 import org.infinispan.Cache;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.AbstractCacheStore;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
+import org.infinispan.loaders.bdbje.configuration.BdbjeCacheStoreConfiguration;
 import org.infinispan.loaders.bdbje.logging.Log;
 import org.infinispan.loaders.modifications.Modification;
 import org.infinispan.commons.marshall.StreamingMarshaller;
@@ -62,14 +61,11 @@ import java.util.Set;
  * @author Manik Surtani
  * @since 4.0
  */
-@CacheLoaderMetadata(configurationClass = BdbjeCacheStoreConfig.class)
-public class BdbjeCacheStore extends AbstractCacheStore {
+public class BdbjeCacheStore <T extends BdbjeCacheStoreConfiguration> extends AbstractCacheStore <T> {
 
    private static final Log log =
          LogFactory.getLog(BdbjeCacheStore.class, Log.class);
    private static final boolean trace = log.isTraceEnabled();
-
-   private BdbjeCacheStoreConfig cfg;
 
    private Environment env;
    private StoredClassCatalog catalog;
@@ -88,30 +84,14 @@ public class BdbjeCacheStore extends AbstractCacheStore {
     * {@inheritDoc} This implementation expects config to be an instance of {@link BdbjeCacheStoreConfig} <p /> note
     * that the <code>m</code> is not currently used as SleepyCat has its own efficient solution.
     *
-    * @see BdbjeCacheStoreConfig
+    * @see {@link BdbjeCacheStoreConfiguration}
     */
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
-      BdbjeCacheStoreConfig cfg = (BdbjeCacheStoreConfig) config;
-      init(cfg, new BdbjeResourceFactory(cfg), cache, m);
-   }
-
-   void init(BdbjeCacheStoreConfig cfg, BdbjeResourceFactory factory, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
-      if (trace) log.trace("initializing BdbjeCacheStore");
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+      if (trace) log.trace("Initializing BdbjeCacheStore");
       printLicense();
-      super.init(cfg, cache, m);
-      this.cfg = cfg;
-      this.factory = factory;
-   }
-
-   /**
-    * {@inheritDoc}
-    *
-    * @return {@link BdbjeCacheStoreConfig}
-    */
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
-      return org.infinispan.loaders.bdbje.BdbjeCacheStoreConfig.class;
+      super.init(configuration, cache, m);
+      this.factory = new BdbjeResourceFactory(configuration);
    }
 
    /**
@@ -141,18 +121,19 @@ public class BdbjeCacheStore extends AbstractCacheStore {
     * CacheStore.
     */
    private void openSleepyCatResources() throws CacheLoaderException {
-      if (trace) log.tracef("creating je environment with home dir %s", cfg.getLocation());
+      if (trace) log.tracef("creating je environment with home dir %s", configuration.location());
 
-      cfg.setCacheName(cache.getName());
-      if (cfg.getCatalogDbName() == null)
-         cfg.setCatalogDbName(cfg.getCacheDbName() + "_class_catalog");
+      // Do we need this call?
+//      configuration.setCacheName(cache.getName());
+      if (configuration.catalogDbName() == null)
+         configuration.catalogDbName();
 
-      File location = verifyOrCreateEnvironmentDirectory(new File(cfg.getLocation()));
+      File location = verifyOrCreateEnvironmentDirectory(new File(configuration.location()));
       try {
-         env = factory.createEnvironment(location, cfg.readEnvironmentProperties());
-         cacheDb = factory.createDatabase(env, cfg.getCacheDbName());
-         Database catalogDb = factory.createDatabase(env, cfg.getCatalogDbName());
-         expiryDb = factory.createDatabase(env, cfg.getExpiryDbName());
+         env = factory.createEnvironment(location);
+         cacheDb = factory.createDatabase(env, configuration.cacheDbNamePrefix());
+         Database catalogDb = factory.createDatabase(env, configuration.catalogDbName());
+         expiryDb = factory.createDatabase(env, configuration.expiryDbPrefix());
          catalog = factory.createStoredClassCatalog(catalogDb);
          cacheMap = factory.createStoredMapViewOfDatabase(cacheDb, catalog, marshaller);
          expiryMap = factory.createStoredSortedMapForKeyExpiry(expiryDb, catalog, marshaller);

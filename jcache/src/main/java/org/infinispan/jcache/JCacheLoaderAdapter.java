@@ -68,8 +68,7 @@ public class JCacheLoaderAdapter<K, V> extends AbstractCacheStore {
       // No-op
    }
 
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+   private Class<? extends CacheLoaderConfig> getConfiguration() {
       return null;
    }
 

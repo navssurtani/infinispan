@@ -323,14 +323,9 @@ public class FileCacheStore <T extends FileCacheStoreConfiguration> extends Buck
    }
 
    @Override
-   public T getConfigurationClass() {
-      return ;
-   }
-
-   @Override
    public void start() throws CacheLoaderException {
       super.start();
-      String location = T.location();
+      String location = configuration.location();
       if (location == null || location.trim().length() == 0) {
          location = "Infinispan-FileCacheStore"; // use relative path!
       }
@@ -344,9 +339,9 @@ public class FileCacheStore <T extends FileCacheStoreConfiguration> extends Buck
       if (!root.exists()) {
          throw new CacheConfigurationException("Directory " + root.getAbsolutePath() + " does not exist and cannot be created!");
       }
-      streamBufferSize = T.streamBufferSize();
+      streamBufferSize = configuration.streamBufferSize();
 
-      FileCacheStoreConfigurationBuilder.FsyncMode fsyncMode = T.fsyncMode();
+      FileCacheStoreConfigurationBuilder.FsyncMode fsyncMode = configuration.fsyncMode();
       switch (fsyncMode) {
          case DEFAULT:
             fileSync = new BufferedFileSync();
@@ -355,7 +350,7 @@ public class FileCacheStore <T extends FileCacheStoreConfiguration> extends Buck
             fileSync = new PerWriteFileSync();
             break;
          case PERIODIC:
-            fileSync = new PeriodicFileSync(T.fsyncInterval());
+            fileSync = new PeriodicFileSync(configuration.fsyncInterval());
             break;
       }
 

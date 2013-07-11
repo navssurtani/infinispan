@@ -509,8 +509,7 @@ public class AsyncStoreTest extends AbstractInfinispanTest {
          STORE.set(this);
       }
 
-      @Override
-      public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+      private Class<? extends CacheLoaderConfig> getConfiguration() {
          return LockableCacheStoreConfig.class;
       }
 

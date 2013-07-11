@@ -76,8 +76,7 @@ public class JCacheWriterAdapter<K, V> extends AbstractCacheStore {
       return Collections.emptySet();
    }
 
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+   private Class<? extends CacheLoaderConfig> getConfiguration() {
       // TODO
       return null;
    }

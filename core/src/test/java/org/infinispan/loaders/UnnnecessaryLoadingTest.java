@@ -217,8 +217,7 @@ public class UnnnecessaryLoadingTest extends SingleCacheManagerTest {
          return false;
       }
 
-      @Override
-      public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+      private Class<? extends CacheLoaderConfig> getConfiguration() {
          return CountingCacheStoreConfig.class;
       }
 

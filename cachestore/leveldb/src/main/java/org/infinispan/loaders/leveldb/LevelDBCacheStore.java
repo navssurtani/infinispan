@@ -48,8 +48,7 @@ public class LevelDBCacheStore extends LockSupportCacheStore<Integer> {
 	private DB db;
 	private DB expiredDb;
 
-	@Override
-	public Class<? extends CacheLoaderConfig> getConfigurationClass() {
+	private Class<? extends CacheLoaderConfig> getConfiguration() {
 		return LevelDBCacheStoreConfig.class;
 	}
 

@@ -18,6 +18,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.io.UnclosableObjectInputStream;
 import org.infinispan.io.UnclosableObjectOutputStream;
@@ -667,8 +668,8 @@ public abstract class BaseJpaCacheStoreTest extends AbstractInfinispanTest {
 	}
 
 	public void testConfigFile() throws Exception {
-		Class<? extends CacheLoaderConfig> cfgClass = cs
-				.getConfigurationClass();
+		CacheLoaderConfiguration cfgClass = cs
+				.getConfiguration();
 		CacheLoaderConfig clc = Util.getInstance(cfgClass);
 		assert clc.getCacheLoaderClassName().equals(cs.getClass().getName()) : "Cache loaders doesn't provide a proper configuration type that is capable of creating the loaders!";
 	}
@@ -840,7 +841,7 @@ public abstract class BaseJpaCacheStoreTest extends AbstractInfinispanTest {
 
 
    public void testConfigFile() throws Exception {
-      Class<? extends CacheLoaderConfig> cfgClass = cs.getConfigurationClass();
+      Class<? extends CacheLoaderConfig> cfgClass = cs.getConfiguration();
       CacheLoaderConfig clc = Util.getInstance(cfgClass);
       assert clc.getCacheLoaderClassName().equals(cs.getClass().getName()) : "Cache loaders doesn't provide a proper configuration type that is capable of creating the loaders!";
    }
