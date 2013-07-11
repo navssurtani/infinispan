@@ -4,15 +4,16 @@ import org.infinispan.Cache;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
 import org.infinispan.commons.io.ByteBuffer;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.LockSupportCacheStore;
 import org.infinispan.loaders.jdbc.DataManipulationHelper;
 import org.infinispan.loaders.jdbc.JdbcUtil;
 import org.infinispan.loaders.jdbc.TableManipulation;
+import org.infinispan.loaders.jdbc.configuration.JdbcStringBasedCacheStoreConfiguration;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactory;
+import org.infinispan.loaders.jdbc.connectionfactory.ManagedConnectionFactory;
 import org.infinispan.loaders.jdbc.logging.Log;
+import org.infinispan.loaders.keymappers.DefaultTwoWayKey2StringMapper;
 import org.infinispan.loaders.keymappers.Key2StringMapper;
 import org.infinispan.loaders.keymappers.TwoWayKey2StringMapper;
 import org.infinispan.loaders.keymappers.UnsupportedKeyTypeException;
@@ -62,8 +63,8 @@ import java.util.Set;
  * @see org.infinispan.loaders.keymappers.Key2StringMapper
  * @see org.infinispan.loaders.keymappers.DefaultTwoWayKey2StringMapper
  */
-@CacheLoaderMetadata(configurationClass = JdbcStringBasedCacheStoreConfig.class)
-public class JdbcStringBasedCacheStore extends LockSupportCacheStore<String> {
+public class JdbcStringBasedCacheStore <T extends JdbcStringBasedCacheStoreConfiguration> extends
+        LockSupportCacheStore <String, T> {
 
    private static final Log log = LogFactory.getLog(JdbcStringBasedCacheStore.class, Log.class);
 
@@ -72,7 +73,6 @@ public class JdbcStringBasedCacheStore extends LockSupportCacheStore<String> {
     */
    private static final byte STRING_STREAM_DELIMITER = 100;
 
-   private JdbcStringBasedCacheStoreConfig config;
    private Key2StringMapper key2StringMapper;
    private ConnectionFactory connectionFactory;
    private TableManipulation tableManipulation;
@@ -80,25 +80,32 @@ public class JdbcStringBasedCacheStore extends LockSupportCacheStore<String> {
    private String cacheName;
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
-      super.init(config, cache, m);
-      this.config = (JdbcStringBasedCacheStoreConfig) config;
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+      super.init(configuration, cache, m);
       cacheName = cache.getName();
    }
 
    @Override
    public void start() throws CacheLoaderException {
       super.start();
-      if (config.isManageConnectionFactory()) {
-         String connectionFactoryClass = config.getConnectionFactoryConfig().getConnectionFactoryClass();
+      if (configuration.connectionFactory() instanceof ManagedConnectionFactory) {
+         String connectionFactoryClass = configuration.connectionFactory().connectionFactoryClass().getName();
          if (log.isTraceEnabled()) {
             log.tracef("Using managed connection factory: %s", connectionFactoryClass);
          }
-         ConnectionFactory connectionFactory = ConnectionFactory.getConnectionFactory(connectionFactoryClass, config.getClassLoader());
-         connectionFactory.start(config.getConnectionFactoryConfig(), config.getClassLoader());
+         ConnectionFactory connectionFactory = ConnectionFactory.getConnectionFactory(connectionFactoryClass,
+                 configuration.getClass().getClassLoader());
+         connectionFactory.start(configuration.connectionFactory(), configuration.getClass().getClassLoader());
          doConnectionFactoryInitialization(connectionFactory);
       }
-      key2StringMapper = config.getKey2StringMapper();
+      try {
+         Object mapper = Class.forName(configuration.key2StringMapper()).newInstance();
+         if (mapper instanceof Key2StringMapper) key2StringMapper = (Key2StringMapper) mapper;
+      } catch (Exception e) {
+         log.errorf("Trying to instantiate %s, however it failed due to %s", configuration.key2StringMapper(),
+               e.getClass().getName());
+         throw new IllegalStateException("This should not happen.", e);
+      }
       if (log.isTraceEnabled()) {
          log.tracef("Using key2StringMapper: %s", key2StringMapper.getClass().getName());
       }
@@ -175,7 +182,7 @@ public class JdbcStringBasedCacheStore extends LockSupportCacheStore<String> {
       }
 
       try {
-         if (config.isManageConnectionFactory()) {
+         if (configuration.connectionFactory() instanceof ManagedConnectionFactory) {
             log.tracef("Stopping mananged connection factory: %s", connectionFactory);
             connectionFactory.stop();
          }
@@ -328,10 +335,6 @@ public class JdbcStringBasedCacheStore extends LockSupportCacheStore<String> {
       return storedEntry;
    }
 
-   private Class<? extends CacheLoaderConfig> getConfiguration() {
-      return JdbcStringBasedCacheStoreConfig.class;
-   }
-
    public boolean supportsKey(Class<?> keyType) {
       return key2StringMapper.isSupportedType(keyType);
    }
@@ -344,7 +347,7 @@ public class JdbcStringBasedCacheStore extends LockSupportCacheStore<String> {
     */
    public void doConnectionFactoryInitialization(ConnectionFactory connectionFactory) throws CacheLoaderException {
       this.connectionFactory = connectionFactory;
-      tableManipulation = config.getTableManipulation();
+      tableManipulation = new TableManipulation(configuration.table());
       tableManipulation.setCacheName(cacheName);
       tableManipulation.start(connectionFactory);
    }

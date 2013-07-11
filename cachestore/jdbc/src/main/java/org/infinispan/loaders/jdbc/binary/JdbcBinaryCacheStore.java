@@ -13,6 +13,7 @@ import org.infinispan.loaders.jdbc.JdbcUtil;
 import org.infinispan.loaders.jdbc.TableManipulation;
 import org.infinispan.loaders.jdbc.configuration.JdbcBinaryCacheStoreConfiguration;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactory;
+import org.infinispan.loaders.jdbc.connectionfactory.ManagedConnectionFactory;
 import org.infinispan.loaders.jdbc.logging.Log;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.util.logging.LogFactory;
@@ -57,7 +58,6 @@ public class JdbcBinaryCacheStore<T extends JdbcBinaryCacheStoreConfiguration> e
    private ConnectionFactory connectionFactory;
    TableManipulation tableManipulation;
    private DataManipulationHelper dmHelper;
-   private String cacheName;
 
    @Override
    public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
@@ -65,14 +65,13 @@ public class JdbcBinaryCacheStore<T extends JdbcBinaryCacheStoreConfiguration> e
          log.tracef("Initializing JdbcBinaryCacheStore %s", configuration.getClass().getName());
       }
       super.init(configuration, cache, m);
-      cacheName = cache.getName();
    }
 
    @Override
    public void start() throws CacheLoaderException {
       super.start();
       String connectionFactoryClass = configuration.connectionFactory().connectionFactoryClass().getName();
-      if (configuration.isManageConnectionFactory()) {
+      if (configuration.connectionFactory() instanceof ManagedConnectionFactory) {
          ConnectionFactory factory = ConnectionFactory.getConnectionFactory(connectionFactoryClass,
                  configuration.getClass().getClassLoader());
          factory.start(configuration.connectionFactory(), configuration.getClass().getClassLoader());
@@ -160,7 +159,7 @@ public class JdbcBinaryCacheStore<T extends JdbcBinaryCacheStoreConfiguration> e
       }
 
       try {
-         if (?) {
+         if (configuration.connectionFactory() instanceof ManagedConnectionFactory) {
             log.tracef("Stopping mananged connection factory: %s", connectionFactory);
             connectionFactory.stop();
          }

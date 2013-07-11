@@ -4,6 +4,8 @@ import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.remote.RemoteCacheStore;
 import org.infinispan.loaders.remote.RemoteCacheStoreConfig;
+import org.infinispan.loaders.remote.configuration.RemoteCacheStoreConfiguration;
+import org.infinispan.loaders.remote.configuration.RemoteCacheStoreConfigurationBuilder;
 import org.infinispan.util.logging.Log;
 import org.infinispan.util.logging.LogFactory;
 
@@ -24,8 +26,7 @@ import java.util.Properties;
  * @author Galder Zamarreño
  * @since 5.1
  */
-@CacheLoaderMetadata(configurationClass = RemoteEventCacheStore.RemoteEventCacheStoreConfig.class)
-public class RemoteEventCacheStore extends RemoteCacheStore {
+public class RemoteEventCacheStore<T extends RemoteCacheStoreConfiguration> extends RemoteCacheStore <T>{
 
    private static final Log log = LogFactory.getLog(RemoteEventCacheStore.class);
 

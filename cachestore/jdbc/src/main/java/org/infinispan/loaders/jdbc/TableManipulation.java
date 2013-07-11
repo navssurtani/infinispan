@@ -2,6 +2,7 @@ package org.infinispan.loaders.jdbc;
 
 import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.loaders.CacheLoaderException;
+import org.infinispan.loaders.jdbc.configuration.TableManipulationConfiguration;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactory;
 import org.infinispan.loaders.jdbc.logging.Log;
 import org.infinispan.util.logging.LogFactory;
@@ -65,15 +66,13 @@ public class TableManipulation implements Cloneable {
 
    private TableName tableName;
 
-   public TableManipulation(String idColumnName, String idColumnType, String tableNamePrefix, String dataColumnName,
-                            String dataColumnType, String timestampColumnName, String timestampColumnType) {
-      this.idColumnName = idColumnName;
-      this.idColumnType = idColumnType;
-      this.tableNamePrefix = tableNamePrefix;
-      this.dataColumnName = dataColumnName;
-      this.dataColumnType = dataColumnType;
-      this.timestampColumnName = timestampColumnName;
-      this.timestampColumnType = timestampColumnType;
+   public TableManipulation(TableManipulationConfiguration tmc) {
+      this.idColumnName = tmc.idColumnName();
+      this.idColumnName = tmc.idColumnName();
+      this.tableNamePrefix = tmc.tableNamePrefix();
+      this.dataColumnName = tmc.dataColumnName();
+      this.timestampColumnName = tmc.timestampColumnName();
+      this.timestampColumnType = tmc.timestampColumnType();
    }
 
    public TableManipulation() {

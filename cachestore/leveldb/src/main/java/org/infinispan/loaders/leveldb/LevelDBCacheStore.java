@@ -17,11 +17,10 @@ import org.infinispan.Cache;
 import org.infinispan.commons.util.InfinispanCollections;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.LockSupportCacheStore;
 import org.infinispan.loaders.leveldb.LevelDBCacheStoreConfig.ImplementationType;
+import org.infinispan.loaders.leveldb.configuration.LevelDBCacheStoreConfiguration;
 import org.infinispan.loaders.leveldb.logging.Log;
 import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.commons.marshall.StreamingMarshaller;
@@ -34,30 +33,22 @@ import org.iq80.leveldb.DBIterator;
 import org.iq80.leveldb.Options;
 import org.iq80.leveldb.ReadOptions;
 
-@CacheLoaderMetadata(configurationClass = LevelDBCacheStoreConfig.class)
-public class LevelDBCacheStore extends LockSupportCacheStore<Integer> {
+public class LevelDBCacheStore <T extends LevelDBCacheStoreConfiguration> extends LockSupportCacheStore<Integer, T> {
 	private static final Log log = LogFactory.getLog(LevelDBCacheStore.class, Log.class);
 
 	private static final String JNI_DB_FACTORY_CLASS_NAME = "org.fusesource.leveldbjni.JniDBFactory";
 	private static final String JAVA_DB_FACTORY_CLASS_NAME = "org.iq80.leveldb.impl.Iq80DBFactory";
 	private static final String[] DB_FACTORY_CLASS_NAMES = new String[]{JNI_DB_FACTORY_CLASS_NAME, JAVA_DB_FACTORY_CLASS_NAME};
 
-	private LevelDBCacheStoreConfig config;
 	private BlockingQueue<ExpiryEntry> expiryEntryQueue;
 	private DBFactory dbFactory;
 	private DB db;
 	private DB expiredDb;
 
-	private Class<? extends CacheLoaderConfig> getConfiguration() {
-		return LevelDBCacheStoreConfig.class;
-	}
-
 	@Override
-	public void init(CacheLoaderConfig config, Cache<?, ?> cache,
+	public void init(T configuration, Cache<?, ?> cache,
 			StreamingMarshaller m) throws CacheLoaderException {
-		super.init(config, cache, m);
-
-		this.config = (LevelDBCacheStoreConfig) config;
+		super.init(configuration, cache, m);
 
 		this.dbFactory = newDbFactory();
 
@@ -70,23 +61,22 @@ public class LevelDBCacheStore extends LockSupportCacheStore<Integer> {
 		} else {
 		   log.infoUsingJNIDbFactory(dbFactoryClassName);
 		}
-
 	}
 
 	protected DBFactory newDbFactory() {
-	   ImplementationType type = ImplementationType.valueOf(config.getImplementationType());
+	   ImplementationType type = configuration.implementationType();
 
 	   switch (type) {
 	   case JNI: {
-	      return Util.<DBFactory>getInstance(JNI_DB_FACTORY_CLASS_NAME, config.getClassLoader());
+	      return Util.<DBFactory>getInstance(JNI_DB_FACTORY_CLASS_NAME, configuration.getClass().getClassLoader());
 	   }
 	   case JAVA: {
-	      return Util.<DBFactory>getInstance(JAVA_DB_FACTORY_CLASS_NAME, config.getClassLoader());
+	      return Util.<DBFactory>getInstance(JAVA_DB_FACTORY_CLASS_NAME, configuration.getClass().getClassLoader());
 	   }
 	   default: {
 	      for (String className : DB_FACTORY_CLASS_NAMES) {
 	         try {
-	            return Util.<DBFactory>getInstance(className, config.getClassLoader());
+	            return Util.<DBFactory>getInstance(className, configuration.getClass().getClassLoader());
 	         } catch (Throwable e) {
 	            if (log.isDebugEnabled()) log.debugUnableToInstantiateDbFactory(className, e);
 	         }
@@ -100,13 +90,10 @@ public class LevelDBCacheStore extends LockSupportCacheStore<Integer> {
 	@Override
 	public void start() throws CacheLoaderException {
 		expiryEntryQueue = new LinkedBlockingQueue<ExpiryEntry>(
-				config.getExpiryQueueSize());
-
+				configuration.expiryQueueSize());
 		try {
-		   String cacheFileName = cache.getName().replaceAll("[^a-zA-Z0-9-_\\.]", "_");
-			db = openDatabase(config.getLocation() + cacheFileName, config.getDataDbOptions());
-			expiredDb = openDatabase(config.getExpiredLocation() + cacheFileName,
-					config.getExpiredDbOptions());
+			db = openDatabase(configuration.location(), buildDBOptions());
+			expiredDb = openDatabase(configuration.expiredLocation(), new Options().createIfMissing(true));
 		} catch (IOException e) {
 			throw new CacheConfigurationException("Unable to open database", e);
 		}
@@ -114,7 +101,7 @@ public class LevelDBCacheStore extends LockSupportCacheStore<Integer> {
 		super.start();
 	}
 
-	/**
+   /**
 	 * Creates database if it doesn't exist.
 	 *
 	 * @return database at location
@@ -153,9 +140,9 @@ public class LevelDBCacheStore extends LockSupportCacheStore<Integer> {
       } catch (IOException e) {
          log.warnUnableToCloseExpiredDb(e);
       }
-		db = reinitDatabase(config.getLocation(), config.getDataDbOptions());
-		expiredDb = reinitDatabase(config.getExpiredLocation(),
-				config.getExpiredDbOptions());
+
+		db = reinitDatabase(configuration.location(), buildDBOptions());
+		expiredDb = reinitDatabase(configuration.expiredLocation(), new Options().createIfMissing(true));
 	}
 
 	@Override
@@ -181,14 +168,14 @@ public class LevelDBCacheStore extends LockSupportCacheStore<Integer> {
 		DBIterator it = db.iterator(new ReadOptions().fillCache(false));
 		boolean destroyDatabase = false;
 
-		if (config.getClearThreshold() <= 0) {
+		if (configuration.clearThreshold() <= 0) {
 			try {
 				for (it.seekToFirst(); it.hasNext();) {
 					Map.Entry<byte[], byte[]> entry = it.next();
 					db.delete(entry.getKey());
 					count++;
 
-					if (count > config.clearThreshold) {
+					if (count > configuration.clearThreshold()) {
 						destroyDatabase = true;
 						break;
 					}
@@ -532,9 +519,9 @@ public class LevelDBCacheStore extends LockSupportCacheStore<Integer> {
 	}
 
 	private static final class ExpiryEntry {
-		private final Long expiry;
-		private final Object key;
 
+      private final Long expiry;
+      private final Object key;
 		private ExpiryEntry(long expiry, Object key) {
 			this.expiry = expiry;
 			this.key = key;
@@ -566,5 +553,13 @@ public class LevelDBCacheStore extends LockSupportCacheStore<Integer> {
 		}
 
 	}
+
+   // Method to simplify building the database options based off of the configuration.
+   private Options buildDBOptions() {
+      Options options = new Options().createIfMissing(true);
+      if (configuration.blockSize() != null) options.blockSize(configuration.blockSize());
+      if (configuration.cacheSize() != null) options.cacheSize(configuration.cacheSize());
+      return options;
+   }
 
 }

@@ -31,21 +31,18 @@ import org.infinispan.AdvancedCache;
 import org.infinispan.Cache;
 import org.infinispan.container.entries.ImmortalCacheEntry;
 import org.infinispan.container.entries.InternalCacheEntry;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.LockSupportCacheStore;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.commons.util.InfinispanCollections;
+import org.infinispan.loaders.jpa.configuration.JpaCacheStoreConfiguration;
 
 /**
  *
  * @author <a href="mailto:rtsang@redhat.com">Ray Tsang</a>
  *
  */
-@CacheLoaderMetadata(configurationClass = JpaCacheStoreConfig.class)
-public class JpaCacheStore extends LockSupportCacheStore<Integer> {
-	private JpaCacheStoreConfig config;
+public class JpaCacheStore<T extends JpaCacheStoreConfiguration> extends LockSupportCacheStore<Integer, T> {
 	private AdvancedCache<?, ?> cache;
 	private EntityManagerFactory emf;
 	private EntityManagerFactoryRegistry emfRegistry;
@@ -53,12 +50,11 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 	private final static byte BINARY_STREAM_DELIMITER = 100;
 
 	@Override
-	public void init(CacheLoaderConfig config, Cache<?, ?> cache,
+	public void init(T configuration, Cache<?, ?> cache,
 			StreamingMarshaller m) throws CacheLoaderException {
-		super.init(config, cache, m);
+		super.init(configuration, cache, m);
 		this.cache = cache.getAdvancedCache();
 		this.emfRegistry = this.cache.getComponentRegistry().getGlobalComponentRegistry().getComponent(EntityManagerFactoryRegistry.class);
-		this.config = (JpaCacheStoreConfig) config;
 	}
 
 	@Override
@@ -66,18 +62,20 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 		super.start();
 
 		try {
-			this.emf = this.emfRegistry.getEntityManagerFactory(config.getPersistenceUnitName());
+			this.emf = this.emfRegistry.getEntityManagerFactory(configuration.persistenceUnitName());
 		} catch (PersistenceException e) {
-			throw new JpaCacheLoaderException("Persistence Unit [" + this.config.getPersistenceUnitName() + "] not found", e);
+			throw new JpaCacheLoaderException("Persistence Unit [" + configuration.persistenceUnitName() + "] not found", e);
 		}
 
 		ManagedType<?> mt;
 
 		try {
 			mt = emf.getMetamodel()
-				.entity(this.config.getEntityClass());
+				.entity(configuration.entityClass());
 		} catch (IllegalArgumentException e) {
-			throw new JpaCacheLoaderException("Entity class [" + this.config.getEntityClassName() + " specified in configuration is not recognized by the EntityManagerFactory with Persistence Unit [" + this.config.getPersistenceUnitName() + "]", e);
+			throw new JpaCacheLoaderException("Entity class [" + configuration.entityClass().getName() + " specified in " +
+               "configuration is not recognized by the EntityManagerFactory with Persistence Unit [" + this
+               .configuration.persistenceUnitName() + "]", e);
 		}
 
 		if (!(mt instanceof IdentifiableType)) {
@@ -107,7 +105,7 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 	@Override
 	public void stop() throws CacheLoaderException {
 		try {
-		   this.emfRegistry.closeEntityManagerFactory(config.getPersistenceUnitName());
+		   this.emfRegistry.closeEntityManagerFactory(configuration.persistenceUnitName());
 			super.stop();
 		} catch (Throwable t) {
 			throw new CacheLoaderException(
@@ -115,12 +113,8 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 		}
 	}
 
-	private Class<? extends CacheLoaderConfig> getConfiguration() {
-		return JpaCacheStoreConfig.class;
-	}
-
 	protected boolean isValidKeyType(Object key) {
-		return emf.getMetamodel().entity(config.getEntityClass()).getIdType().getJavaType().isAssignableFrom(key.getClass());
+		return emf.getMetamodel().entity(configuration.entityClass()).getIdType().getJavaType().isAssignableFrom(key.getClass());
 	}
 
 	@Override
@@ -131,7 +125,7 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 		try {
 			txn.begin();
 
-			String name = em.getMetamodel().entity(config.getEntityClass())
+			String name = em.getMetamodel().entity(configuration.entityClass())
 					.getName();
 			Query query = em.createQuery("DELETE FROM " + name);
 			query.executeUpdate();
@@ -165,8 +159,8 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 
 		try {
 			CriteriaBuilder cb = em.getCriteriaBuilder();
-			CriteriaQuery cq = cb.createQuery(config.getEntityClass());
-			cq.select(cq.from(config.getEntityClass()));
+			CriteriaQuery cq = cb.createQuery(configuration.entityClass());
+			cq.select(cq.from(configuration.entityClass()));
 
 			TypedQuery q = em.createQuery(cq);
 			if (maxEntries > 0)
@@ -204,7 +198,7 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 			CriteriaBuilder cb = em.getCriteriaBuilder();
 			CriteriaQuery<Tuple> cq = cb.createTupleQuery();
 
-			Root root = cq.from(config.getEntityClass());
+			Root root = cq.from(configuration.entityClass());
 			Type idType = root.getModel().getIdType();
 			SingularAttribute idAttr = root.getModel().getId(
 					idType.getJavaType());
@@ -235,8 +229,8 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 
 		try {
 			CriteriaBuilder cb = em.getCriteriaBuilder();
-			CriteriaQuery cq = cb.createQuery(config.getEntityClass());
-			cq.select(cq.from(config.getEntityClass()));
+			CriteriaQuery cq = cb.createQuery(configuration.entityClass());
+			cq.select(cq.from(configuration.entityClass()));
 
 			TypedQuery q = em.createQuery(cq);
 
@@ -273,7 +267,7 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 				em.merge(o);
 				batchSize++;
 
-				if (batchSize >= config.getBatchSize()) {
+				if (batchSize >= configuration.batchSize()) {
 					em.flush();
 					em.clear();
 					batchSize = 0;
@@ -308,7 +302,7 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 
 		EntityManager em = emf.createEntityManager();
 		try {
-			Object o = em.find(config.getEntityClass(), key);
+			Object o = em.find(configuration.entityClass(), key);
 			if (o == null) {
 				return false;
 			}
@@ -339,9 +333,10 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 
 		Object o = entry.getValue();
 		try {
-			if (!config.getEntityClass().isAssignableFrom(o.getClass())) {
+			if (!configuration.entityClass().isAssignableFrom(o.getClass())) {
 				throw new JpaCacheLoaderException(
-						"This cache is configured with JPA CacheStore to only store values of type " + config.getEntityClassName());
+						"This cache is configured with JPA CacheStore to only store values of type " + configuration
+                        .entityClass().getName());
 			} else {
 				EntityTransaction txn = em.getTransaction();
 				Object id = emf.getPersistenceUnitUtil().getIdentifier(o);
@@ -380,7 +375,7 @@ public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 
 		EntityManager em = emf.createEntityManager();
 		try {
-			Object o = em.find(config.getEntityClass(), key);
+			Object o = em.find(configuration.entityClass(), key);
 			if (o == null)
 				return null;
 

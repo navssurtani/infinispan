@@ -9,12 +9,13 @@ import jdbm.helper.TupleBrowser;
 import jdbm.htree.HTree;
 import net.jcip.annotations.ThreadSafe;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
 import org.infinispan.loaders.AbstractCacheStore;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
+import org.infinispan.loaders.jdbm.configuration.JdbmCacheStoreConfiguration;
+import org.infinispan.loaders.jdbm.configuration.JdbmCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.modifications.Modification;
 import org.infinispan.loaders.modifications.Remove;
 import org.infinispan.loaders.modifications.Store;
@@ -55,8 +56,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @author Galder Zamarreño
  */
 @ThreadSafe
-@CacheLoaderMetadata(configurationClass = JdbmCacheStoreConfig.class)
-public class JdbmCacheStore extends AbstractCacheStore {
+public class JdbmCacheStore <T extends JdbmCacheStoreConfiguration> extends AbstractCacheStore <T>{
 
    private static final Log log = LogFactory.getLog(JdbmCacheStore.class, Log.class);
    private static final boolean trace = log.isTraceEnabled();
@@ -65,32 +65,35 @@ public class JdbmCacheStore extends AbstractCacheStore {
    private static final String EXPIRY = "Expiry";
    private static final String DATE = "HH:mm:ss.SSS";
 
+   // Need to override type here to deal with Temp directory
+   private JdbmCacheStoreConfiguration configuration;
+
    private BlockingQueue<ExpiryEntry> expiryEntryQueue;
 
-   private JdbmCacheStoreConfig config;
    private RecordManager recman;
    private HTree tree;
    private BTree expiryTree;
 
-   private Class<? extends CacheLoaderConfig> getConfiguration() {
-      return JdbmCacheStoreConfig.class;
-   }
-
    @Override
-   public void init(CacheLoaderConfig clc, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
-      super.init(clc, cache, m);
-      this.config = (JdbmCacheStoreConfig) clc;
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+      super.init(configuration, cache, m);
+      this.configuration = configuration;
    }
 
    @Override
    public void start() throws CacheLoaderException {
-      String locationStr = config.getLocation();
+      String locationStr = configuration.location();
       if (locationStr == null) {
          locationStr = SysPropertyActions.getProperty("java.io.tmpdir");
-         config.setLocation(locationStr);
+         ConfigurationBuilder builder = new ConfigurationBuilder();
+         JdbmCacheStoreConfigurationBuilder storeBuilder = builder.loaders().addLoader
+               (JdbmCacheStoreConfigurationBuilder.class);
+         storeBuilder.read(configuration);
+         storeBuilder.location(locationStr);
+         configuration = storeBuilder.create();
       }
 
-      expiryEntryQueue = new LinkedBlockingQueue<ExpiryEntry>(config.getExpiryQueueSize());
+      expiryEntryQueue = new LinkedBlockingQueue<ExpiryEntry>(configuration.expiryQueueSize());
 
       // JBCACHE-1448 db name parsing fix courtesy of Ciro Cavani
       /* Parse config string. */
@@ -474,7 +477,7 @@ public class JdbmCacheStore extends AbstractCacheStore {
    public String toString() {
       BTree et = expiryTree;
       int expiry = (et == null) ? -1 : et.size();
-      return "JdbmCacheLoader locationStr=" + config.getLocation() + " expirySize=" + expiry;
+      return "JdbmCacheLoader locationStr=" + configuration.location() + " expirySize=" + expiry;
    }
 
    private final class BTreeSet extends AbstractSet<InternalCacheEntry> {

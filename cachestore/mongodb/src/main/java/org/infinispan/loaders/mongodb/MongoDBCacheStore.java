@@ -5,9 +5,8 @@ import net.jcip.annotations.ThreadSafe;
 import org.infinispan.Cache;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.AbstractCacheStore;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
+import org.infinispan.loaders.mongodb.configuration.MongoDBCacheStoreConfiguration;
 import org.infinispan.loaders.mongodb.logging.Log;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.util.logging.LogFactory;
@@ -26,13 +25,11 @@ import java.util.Set;
  * @author Guillaume Scheibel <guillaume.scheibel@gmail.com>
  */
 @ThreadSafe
-@CacheLoaderMetadata(configurationClass = MongoDBCacheStoreConfig.class)
-public class MongoDBCacheStore extends AbstractCacheStore {
+public class MongoDBCacheStore<T extends MongoDBCacheStoreConfiguration> extends AbstractCacheStore<T> {
 
    private static final Log log = LogFactory.getLog(MongoDBCacheStore.class, Log.class);
    private static final boolean trace = log.isTraceEnabled();
 
-   private MongoDBCacheStoreConfig cfg;
    private MongoClient mongo;
    private DBCollection collection;
    private DB mongoDb;
@@ -41,9 +38,8 @@ public class MongoDBCacheStore extends AbstractCacheStore {
    private static final String VALUE_FIELD = "value";
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
-      super.init(config, cache, m);
-      this.cfg = (MongoDBCacheStoreConfig) config;
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+      super.init(configuration, cache, m);
    }
 
    @Override
@@ -232,32 +228,28 @@ public class MongoDBCacheStore extends AbstractCacheStore {
       return values;
    }
 
-   private Class<? extends CacheLoaderConfig> getConfiguration() {
-      return MongoDBCacheStoreConfig.class;
-   }
-
    @Override
    public void start() throws CacheLoaderException {
       super.start();
       try {
          MongoClientOptions.Builder optionBuilder = new MongoClientOptions.Builder();
-         optionBuilder.connectTimeout(this.cfg.getTimeout());
+         optionBuilder.connectTimeout(this.configuration.timeout());
 
-         WriteConcern writeConcern = new WriteConcern(this.cfg.getAcknowledgment());
+         WriteConcern writeConcern = new WriteConcern(this.configuration.acknowledgment());
          optionBuilder.writeConcern(writeConcern);
 
-         log.connectingToMongo(this.cfg.getHost(), this.cfg.getPort(), this.cfg.getTimeout(), this.cfg.getAcknowledgment());
+         log.connectingToMongo(this.configuration.host(), this.configuration.port(), this.configuration.timeout(), this.configuration.acknowledgment());
 
-         ServerAddress serverAddress = new ServerAddress(this.cfg.getHost(), this.cfg.getPort());
+         ServerAddress serverAddress = new ServerAddress(this.configuration.host(), this.configuration.port());
 
          this.mongo = new MongoClient(serverAddress, optionBuilder.build());
       } catch (UnknownHostException e) {
-         throw log.mongoOnUnknownHost(this.cfg.getHost());
+         throw log.mongoOnUnknownHost(this.configuration.host());
       } catch (RuntimeException e) {
          throw log.unableToInitializeMongoDB(e);
       }
       mongoDb = extractDatabase();
-      this.collection = mongoDb.getCollection(this.cfg.getCollectionName());
+      this.collection = mongoDb.getCollection(this.configuration.collection());
 
    }
 
@@ -270,23 +262,23 @@ public class MongoDBCacheStore extends AbstractCacheStore {
 
    private DB extractDatabase() throws CacheLoaderException {
       try {
-         log.connectingToMongoDatabase(this.cfg.getDatabase());
-         if (!"".equals(this.cfg.getUsername())) {
+         log.connectingToMongoDatabase(this.configuration.database());
+         if (!"".equals(this.configuration.username())) {
             DB admin = this.mongo.getDB("admin");
-            boolean auth = admin.authenticate(this.cfg.getUsername(), this.cfg.getPassword().toCharArray());
+            boolean auth = admin.authenticate(this.configuration.username(), this.configuration.password().toCharArray());
             if (!auth) {
-               throw log.authenticationFailed(this.cfg.getUsername());
+               throw log.authenticationFailed(this.configuration.username());
             }
          }
-         if ("".equals(this.cfg.getDatabase())) {
+         if ("".equals(this.configuration.database())) {
             throw log.mongoDbNameMissing();
          }
-         if (!this.mongo.getDatabaseNames().contains(this.cfg.getDatabase())) {
-            log.creatingDatabase(this.cfg.getDatabase());
+         if (!this.mongo.getDatabaseNames().contains(this.configuration.database())) {
+            log.creatingDatabase(this.configuration.database());
          }
-         return this.mongo.getDB(this.cfg.getDatabase());
+         return this.mongo.getDB(this.configuration.database());
       } catch (MongoException e) {
-         throw log.unableToConnectToDatastore(this.cfg.getHost(), this.cfg.getPort(), e);
+         throw log.unableToConnectToDatastore(this.configuration.host(), this.configuration.port(), e);
       }
    }
 }

@@ -1,6 +1,7 @@
 package org.infinispan.loaders.jdbc.mixed;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.AbstractCacheStore;
 import org.infinispan.loaders.CacheLoaderConfig;
@@ -8,6 +9,13 @@ import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.CacheStore;
 import org.infinispan.loaders.jdbc.binary.JdbcBinaryCacheStore;
+import org.infinispan.loaders.jdbc.configuration.ConnectionFactoryConfiguration;
+import org.infinispan.loaders.jdbc.configuration.JdbcBinaryCacheStoreConfiguration;
+import org.infinispan.loaders.jdbc.configuration.JdbcBinaryCacheStoreConfigurationBuilder;
+import org.infinispan.loaders.jdbc.configuration.JdbcMixedCacheStoreConfiguration;
+import org.infinispan.loaders.jdbc.configuration.JdbcMixedCacheStoreConfigurationBuilder;
+import org.infinispan.loaders.jdbc.configuration.JdbcStringBasedCacheStoreConfiguration;
+import org.infinispan.loaders.jdbc.configuration.JdbcStringBasedCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactory;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactoryConfig;
 import org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore;
@@ -44,30 +52,28 @@ import java.util.Set;
  * @see org.infinispan.loaders.jdbc.binary.JdbcBinaryCacheStore
  * @see org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore
  */
-@CacheLoaderMetadata(configurationClass = JdbcMixedCacheStoreConfig.class)
-public class JdbcMixedCacheStore extends AbstractCacheStore {
+public class JdbcMixedCacheStore<T extends JdbcMixedCacheStoreConfiguration> extends AbstractCacheStore <T>{
 
    private static final Log log = LogFactory.getLog(JdbcMixedCacheStore.class);
 
-   private JdbcMixedCacheStoreConfig config;
    private JdbcBinaryCacheStore binaryCacheStore = new JdbcBinaryCacheStore();
    private JdbcStringBasedCacheStore stringBasedCacheStore = new JdbcStringBasedCacheStore();
    private ConnectionFactory sharedConnectionFactory;
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
-      super.init(config, cache, m);
-      this.config = (JdbcMixedCacheStoreConfig) config;
-      binaryCacheStore.init(this.config.getBinaryCacheStoreConfig(), cache, m);
-      stringBasedCacheStore.init(this.config.getStringCacheStoreConfig(), cache, m);
+   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+      super.init(configuration, cache, m);
+      binaryCacheStore.init(buildBinaryStoreConfiguration(configuration), cache, m);
+      stringBasedCacheStore.init(buildStringStoreConfiguration(configuration), cache, m);
    }
 
    @Override
    public void start() throws CacheLoaderException {
       super.start();
-      ConnectionFactoryConfig factoryConfig = config.getConnectionFactoryConfig();
-      sharedConnectionFactory = ConnectionFactory.getConnectionFactory(factoryConfig.getConnectionFactoryClass(), config.getClassLoader());
-      sharedConnectionFactory.start(factoryConfig, config.getClassLoader());
+      ConnectionFactoryConfiguration factoryConfig = configuration.connectionFactory();
+      sharedConnectionFactory = ConnectionFactory.getConnectionFactory(factoryConfig.connectionFactoryClass().getName(),
+            configuration.getClass().getClassLoader());
+      sharedConnectionFactory.start(factoryConfig, configuration.getClass().getClassLoader());
       binaryCacheStore.doConnectionFactoryInitialization(sharedConnectionFactory);
       binaryCacheStore.start();
       stringBasedCacheStore.doConnectionFactoryInitialization(sharedConnectionFactory);
@@ -173,11 +179,6 @@ public class JdbcMixedCacheStore extends AbstractCacheStore {
       binaryCacheStore.clear();
       stringBasedCacheStore.clear();
    }
-
-   private Class<? extends CacheLoaderConfig> getConfiguration() {
-      return JdbcMixedCacheStoreConfig.class;
-   }
-
    private CacheStore getCacheStore(Object key) {
       return stringBasedCacheStore.supportsKey(key.getClass()) ? stringBasedCacheStore : binaryCacheStore;
    }
@@ -192,5 +193,26 @@ public class JdbcMixedCacheStore extends AbstractCacheStore {
 
    public JdbcStringBasedCacheStore getStringBasedCacheStore() {
       return stringBasedCacheStore;
+   }
+
+   // Methods to build the String and Binary Configurations.
+
+   private JdbcStringBasedCacheStoreConfiguration buildStringStoreConfiguration(JdbcMixedCacheStoreConfiguration configuration){
+      ConfigurationBuilder builder = new ConfigurationBuilder();
+      JdbcStringBasedCacheStoreConfigurationBuilder stringBuilder = builder.loaders().addLoader
+            (JdbcStringBasedCacheStoreConfigurationBuilder.class);
+      stringBuilder.
+            key2StringMapper(configuration.key2StringMapper()).
+            table().read(configuration.stringTable());
+
+      return stringBuilder.create();
+   }
+
+   private JdbcBinaryCacheStoreConfiguration buildBinaryStoreConfiguration(JdbcMixedCacheStoreConfiguration configuration) {
+      ConfigurationBuilder builder = new ConfigurationBuilder();
+      JdbcBinaryCacheStoreConfigurationBuilder binaryBuilder = builder.loaders().addLoader
+            (JdbcBinaryCacheStoreConfigurationBuilder.class);
+      binaryBuilder.table().read(configuration.binaryTable());
+      return binaryBuilder.create();
    }
 }

@@ -1,10 +1,9 @@
 package org.infinispan.loaders.bucket;
 
-import org.infinispan.loaders.LockSupportCacheStore;
-
 import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.CacheLoaderException;
+import org.infinispan.loaders.LockSupportCacheStore;
 
 import java.util.Collection;
 import java.util.HashSet;
