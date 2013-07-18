@@ -2,8 +2,13 @@ package org.infinispan.loaders.decorators;
 
 import org.infinispan.Cache;
 import org.infinispan.commons.CacheException;
+import org.infinispan.commons.configuration.BuiltBy;
+import org.infinispan.configuration.cache.AsyncStoreConfigurationBuilder;
+import org.infinispan.configuration.cache.LoadersConfigurationBuilder;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.AbstractCacheStoreTest;
+import org.infinispan.loaders.dummy.DummyInMemoryCacheStoreConfiguration;
+import org.infinispan.loaders.dummy.DummyInMemoryCacheStoreConfigurationBuilder;
 import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.TestInternalCacheEntryFactory;
 import org.infinispan.loaders.CacheLoaderConfig;
@@ -50,8 +55,11 @@ public class AsyncStoreTest extends AbstractInfinispanTest {
       DummyInMemoryCacheStore underlying = new DummyInMemoryCacheStore();
       AsyncStoreConfig asyncConfig = new AsyncStoreConfig().threadPoolSize(10);
       store = new AsyncStore(underlying, asyncConfig);
-      DummyInMemoryCacheStore.Cfg dummyCfg = new DummyInMemoryCacheStore.Cfg().storeName(AsyncStoreTest.class.getName());
-      store.init(dummyCfg, getCache(), null);
+      DummyInMemoryCacheStoreConfigurationBuilder dummyCfg = TestCacheManagerFactory.getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(DummyInMemoryCacheStoreConfigurationBuilder.class)
+                  .storeName(AsyncStoreTest.class.getName());
+      store.init(dummyCfg.async().create(), getCache(), null);
       store.start();
    }
 
@@ -134,9 +142,11 @@ public class AsyncStoreTest extends AbstractInfinispanTest {
          DummyInMemoryCacheStore underlying = new DummyInMemoryCacheStore();
          AsyncStoreConfig asyncConfig = new AsyncStoreConfig().threadPoolSize(10);
          store = new MockAsyncStore(key, v1Latch, v2Latch, endLatch, underlying, asyncConfig);
-         DummyInMemoryCacheStore.Cfg dummyCfg = new DummyInMemoryCacheStore.Cfg();
-         dummyCfg.storeName(m.getName());
-         store.init(dummyCfg, getCache(), null);
+         DummyInMemoryCacheStoreConfigurationBuilder dummyCfg = TestCacheManagerFactory
+               .getDefaultCacheConfiguration(false)
+               .loaders().addLoader(DummyInMemoryCacheStoreConfigurationBuilder.class)
+                  .storeName(m.getName());
+         store.init(dummyCfg.async().create(), getCache(), null);
          store.start();
 
          store.store(TestInternalCacheEntryFactory.create(key, "v1"));
@@ -190,9 +200,11 @@ public class AsyncStoreTest extends AbstractInfinispanTest {
                }
             }
          };
-         DummyInMemoryCacheStore.Cfg dummyCfg = new DummyInMemoryCacheStore.Cfg();
-         dummyCfg.storeName(m.getName());
-         store.init(dummyCfg, getCache(), null);
+         DummyInMemoryCacheStoreConfigurationBuilder dummyCfg = TestCacheManagerFactory
+               .getDefaultCacheConfiguration(false)
+               .loaders().addLoader(DummyInMemoryCacheStoreConfigurationBuilder.class)
+               .storeName(m.getName());
+         store.init(dummyCfg.async().create(), getCache(), null);
          store.start();
 
          List<Modification> mods = new ArrayList<Modification>();
@@ -267,9 +279,11 @@ public class AsyncStoreTest extends AbstractInfinispanTest {
                }
             }
          };
-         DummyInMemoryCacheStore.Cfg dummyCfg = new DummyInMemoryCacheStore.Cfg();
-         dummyCfg.storeName(m.getName());
-         store.init(dummyCfg, getCache(), null);
+         DummyInMemoryCacheStoreConfigurationBuilder dummyCfg = TestCacheManagerFactory
+               .getDefaultCacheConfiguration(false)
+               .loaders().addLoader(DummyInMemoryCacheStoreConfigurationBuilder.class)
+               .storeName(m.getName());
+         store.init(dummyCfg.async().create(), getCache(), null);
          store.start();
 
          List<Modification> mods = new ArrayList<Modification>();
@@ -492,11 +506,19 @@ public class AsyncStoreTest extends AbstractInfinispanTest {
 
    private final static ThreadLocal<LockableCacheStore> STORE = new ThreadLocal<LockableCacheStore>();
 
-   public static class LockableCacheStoreConfig extends DummyInMemoryCacheStore.Cfg {
+   @BuiltBy(LockableCacheStoreConfigurationBuilder.class)
+   public static class LockableCacheStoreConfiguration extends DummyInMemoryCacheStoreConfiguration {
       private static final long serialVersionUID = 1L;
 
       public LockableCacheStoreConfig() {
          setCacheLoaderClassName(LockableCacheStore.class.getName());
+      }
+   }
+
+   public static class LockableCacheStoreConfigurationBuilder extends DummyInMemoryCacheStoreConfigurationBuilder {
+
+      public LockableCacheStoreConfigurationBuilder(LoadersConfigurationBuilder builder) {
+         super(builder);
       }
    }
 
@@ -507,10 +529,6 @@ public class AsyncStoreTest extends AbstractInfinispanTest {
       public LockableCacheStore() {
          super();
          STORE.set(this);
-      }
-
-      private Class<? extends CacheLoaderConfig> getConfiguration() {
-         return LockableCacheStoreConfig.class;
       }
 
       @Override
@@ -536,9 +554,19 @@ public class AsyncStoreTest extends AbstractInfinispanTest {
 
    public void testModificationQueueSize(final Method m) throws Exception {
       LockableCacheStore underlying = new LockableCacheStore();
-      AsyncStoreConfig asyncConfig = new AsyncStoreConfig().threadPoolSize(10);
-      asyncConfig.modificationQueueSize(10);
+      ConfigurationBuilder builder = TestCacheManagerFactory.getDefaultCacheConfiguration(false);
+
+      builder.loaders()
+               .addFileCacheStore()
+               .async()
+                  .modificationQueueSize(10);
+
+
       store = new AsyncStore(underlying, asyncConfig);
+
+      ConfigurationBuilder builder = TestCacheManagerFactory.getDefaultCacheConfiguration(false);
+      LockableCacheStoreConfiguration
+
       store.init(new LockableCacheStoreConfig(), getCache(), null);
       store.start();
       try {

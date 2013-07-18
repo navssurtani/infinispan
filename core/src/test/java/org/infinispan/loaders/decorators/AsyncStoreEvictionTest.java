@@ -7,8 +7,6 @@ import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.cache.CacheStoreConfigurationBuilder;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.eviction.EvictionStrategy;
-import org.infinispan.loaders.CacheLoaderConfig;
-import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.dummy.DummyInMemoryCacheStore;
 import org.infinispan.test.CacheManagerCallable;
 import org.infinispan.test.TestingUtil;
@@ -37,25 +35,13 @@ public class AsyncStoreEvictionTest {
 
    private final static ThreadLocal<LockableCacheStore> STORE = new ThreadLocal<LockableCacheStore>();
 
-   public static class LockableCacheStoreConfig extends DummyInMemoryCacheStore.Cfg {
-      private static final long serialVersionUID = 1L;
 
-      public LockableCacheStoreConfig() {
-         setCacheLoaderClassName(LockableCacheStore.class.getName());
-      }
-   }
-
-   @CacheLoaderMetadata(configurationClass = LockableCacheStoreConfig.class)
    public static class LockableCacheStore extends DummyInMemoryCacheStore {
       private final ReentrantLock lock = new ReentrantLock();
 
       public LockableCacheStore() {
          super();
          STORE.set(this);
-      }
-
-      private Class<? extends CacheLoaderConfig> getConfiguration() {
-         return LockableCacheStoreConfig.class;
       }
 
       @Override

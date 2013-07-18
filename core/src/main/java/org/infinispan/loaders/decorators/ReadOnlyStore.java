@@ -17,7 +17,7 @@ import java.util.List;
  * @author Manik Surtani
  * @since 4.0
  */
-public class ReadOnlyStore extends AbstractDelegatingStore {
+public class ReadOnlyStore<T> extends AbstractDelegatingStore <T>{
    private static final Log log = LogFactory.getLog(ReadOnlyStore.class);
 
    public ReadOnlyStore(CacheStore delegate) {

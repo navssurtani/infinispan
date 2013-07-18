@@ -42,7 +42,7 @@ import org.infinispan.loaders.jpa.configuration.JpaCacheStoreConfiguration;
  * @author <a href="mailto:rtsang@redhat.com">Ray Tsang</a>
  *
  */
-public class JpaCacheStore<T extends JpaCacheStoreConfiguration> extends LockSupportCacheStore<Integer, T> {
+public class JpaCacheStore extends LockSupportCacheStore<Integer, JpaCacheStoreConfiguration> {
 	private AdvancedCache<?, ?> cache;
 	private EntityManagerFactory emf;
 	private EntityManagerFactoryRegistry emfRegistry;
@@ -50,7 +50,7 @@ public class JpaCacheStore<T extends JpaCacheStoreConfiguration> extends LockSup
 	private final static byte BINARY_STREAM_DELIMITER = 100;
 
 	@Override
-	public void init(T configuration, Cache<?, ?> cache,
+	public void init(JpaCacheStoreConfiguration configuration, Cache<?, ?> cache,
 			StreamingMarshaller m) throws CacheLoaderException {
 		super.init(configuration, cache, m);
 		this.cache = cache.getAdvancedCache();

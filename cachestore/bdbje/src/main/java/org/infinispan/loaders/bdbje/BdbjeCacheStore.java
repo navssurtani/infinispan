@@ -61,7 +61,8 @@ import java.util.Set;
  * @author Manik Surtani
  * @since 4.0
  */
-public class BdbjeCacheStore <T extends BdbjeCacheStoreConfiguration> extends AbstractCacheStore <T> {
+public class BdbjeCacheStore extends AbstractCacheStore
+      <BdbjeCacheStoreConfiguration> {
 
    private static final Log log =
          LogFactory.getLog(BdbjeCacheStore.class, Log.class);
@@ -87,7 +88,7 @@ public class BdbjeCacheStore <T extends BdbjeCacheStoreConfiguration> extends Ab
     * @see {@link BdbjeCacheStoreConfiguration}
     */
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(BdbjeCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       if (trace) log.trace("Initializing BdbjeCacheStore");
       printLicense();
       super.init(configuration, cache, m);

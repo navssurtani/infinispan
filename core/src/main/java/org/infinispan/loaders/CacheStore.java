@@ -16,7 +16,7 @@ import java.util.Set;
  * @author Manik Surtani
  * @since 4.0
  */
-public interface CacheStore<T extends CacheLoaderConfiguration> extends CacheLoader <T>{
+public interface CacheStore<T> extends CacheLoader <T>{
 
    /**
     * Stores an entry

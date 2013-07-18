@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit;
  * @author Sanne Grinovero
  * @since 4.0
  */
-public class FileCacheStore <T extends FileCacheStoreConfiguration> extends BucketBasedCacheStore<T> {
+public class FileCacheStore extends BucketBasedCacheStore<FileCacheStoreConfiguration> {
 
    static final Log log = LogFactory.getLog(FileCacheStore.class);
    private static final boolean trace = log.isTraceEnabled();
@@ -63,7 +63,7 @@ public class FileCacheStore <T extends FileCacheStoreConfiguration> extends Buck
    }
 
    @Override
-   public void init(T config, Cache<?, ?> cache, StreamingMarshaller m) throws
+   public void init(FileCacheStoreConfiguration config, Cache<?, ?> cache, StreamingMarshaller m) throws
          CacheLoaderException {
       super.init(config, cache, m);
    }

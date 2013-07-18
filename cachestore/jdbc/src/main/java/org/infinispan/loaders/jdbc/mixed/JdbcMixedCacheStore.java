@@ -52,7 +52,7 @@ import java.util.Set;
  * @see org.infinispan.loaders.jdbc.binary.JdbcBinaryCacheStore
  * @see org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore
  */
-public class JdbcMixedCacheStore<T extends JdbcMixedCacheStoreConfiguration> extends AbstractCacheStore <T>{
+public class JdbcMixedCacheStore extends AbstractCacheStore <JdbcMixedCacheStoreConfiguration>{
 
    private static final Log log = LogFactory.getLog(JdbcMixedCacheStore.class);
 
@@ -61,7 +61,7 @@ public class JdbcMixedCacheStore<T extends JdbcMixedCacheStoreConfiguration> ext
    private ConnectionFactory sharedConnectionFactory;
 
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(JdbcMixedCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       super.init(configuration, cache, m);
       binaryCacheStore.init(buildBinaryStoreConfiguration(configuration), cache, m);
       stringBasedCacheStore.init(buildStringStoreConfiguration(configuration), cache, m);

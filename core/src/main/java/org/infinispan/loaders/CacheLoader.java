@@ -13,7 +13,7 @@ import java.util.Set;
  * @author Manik Surtani
  * @since 4.0
  */
-public interface CacheLoader <T extends CacheLoaderConfiguration>{
+public interface CacheLoader <T>{
 
    /**
     * Used to initialize a cache loader.  Typically invoked by the {@link org.infinispan.loaders.CacheLoaderManager}

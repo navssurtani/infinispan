@@ -1,6 +1,7 @@
 package org.infinispan.loaders.decorators;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.SingletonStoreConfiguration;
 import org.infinispan.container.DataContainer;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.CacheLoaderException;
@@ -49,7 +50,7 @@ import java.util.concurrent.TimeoutException;
  * @author Manik Surtani
  * @since 4.0
  */
-public class SingletonStore extends AbstractDelegatingStore {
+public class SingletonStore extends AbstractDelegatingStore <SingletonStoreConfiguration>{
    private static final Log log = LogFactory.getLog(SingletonStore.class);
    private static final boolean trace = log.isTraceEnabled();
 

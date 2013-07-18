@@ -22,7 +22,7 @@ import java.util.Set;
  * @author Manik Surtani
  * @since 4.0
  */
-public class AbstractDelegatingStore<T extends CacheStoreConfiguration> implements CacheStore <T> {
+public class AbstractDelegatingStore<T> implements CacheStore<T> {
 
    CacheStore delegate;
    T configuration;

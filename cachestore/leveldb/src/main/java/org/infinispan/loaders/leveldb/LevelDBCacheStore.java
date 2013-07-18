@@ -33,7 +33,7 @@ import org.iq80.leveldb.DBIterator;
 import org.iq80.leveldb.Options;
 import org.iq80.leveldb.ReadOptions;
 
-public class LevelDBCacheStore <T extends LevelDBCacheStoreConfiguration> extends LockSupportCacheStore<Integer, T> {
+public class LevelDBCacheStore extends LockSupportCacheStore<Integer, LevelDBCacheStoreConfiguration> {
 	private static final Log log = LogFactory.getLog(LevelDBCacheStore.class, Log.class);
 
 	private static final String JNI_DB_FACTORY_CLASS_NAME = "org.fusesource.leveldbjni.JniDBFactory";
@@ -46,7 +46,7 @@ public class LevelDBCacheStore <T extends LevelDBCacheStoreConfiguration> extend
 	private DB expiredDb;
 
 	@Override
-	public void init(T configuration, Cache<?, ?> cache,
+	public void init(LevelDBCacheStoreConfiguration configuration, Cache<?, ?> cache,
 			StreamingMarshaller m) throws CacheLoaderException {
 		super.init(configuration, cache, m);
 

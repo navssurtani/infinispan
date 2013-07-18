@@ -7,7 +7,6 @@ import org.infinispan.configuration.cache.AsyncStoreConfiguration;
 import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
 import org.infinispan.configuration.cache.LegacyLoaderAdapter;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
-import org.infinispan.loaders.dummy.DummyInMemoryCacheStore.Cfg;
 
 @BuiltBy(DummyInMemoryCacheStoreConfigurationBuilder.class)
 public class DummyInMemoryCacheStoreConfiguration extends AbstractStoreConfiguration implements
@@ -47,8 +46,8 @@ public class DummyInMemoryCacheStoreConfiguration extends AbstractStoreConfigura
    }
 
    @Override
-   public Cfg adapt() {
-      Cfg config = new Cfg();
+   public DummyInMemoryCacheStore.Cfg adapt() {
+      DummyInMemoryCacheStore.Cfg config = new DummyInMemoryCacheStore.Cfg();
 
       LegacyConfigurationAdaptor.adapt(this, config);
 

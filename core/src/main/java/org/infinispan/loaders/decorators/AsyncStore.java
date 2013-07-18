@@ -2,6 +2,7 @@ package org.infinispan.loaders.decorators;
 
 import net.jcip.annotations.GuardedBy;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.AsyncStoreConfiguration;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.CacheLoaderConfig;
@@ -61,7 +62,7 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * @author Karsten Blees
  * @since 4.0
  */
-public class AsyncStore extends AbstractDelegatingStore {
+public class AsyncStore extends AbstractDelegatingStore <AsyncStoreConfiguration> {
    private static final Log log = LogFactory.getLog(AsyncStore.class);
    private static final boolean trace = log.isTraceEnabled();
    private static final AtomicInteger threadId = new AtomicInteger(0);
@@ -89,8 +90,10 @@ public class AsyncStore extends AbstractDelegatingStore {
    }
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
-      super.init(config, cache, m);
+   public void init(AsyncStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
+
+      super.init(configuration, cache, m);
       Configuration cacheCfg = cache != null ? cache.getCacheConfiguration() : null;
       concurrencyLevel = cacheCfg != null ? cacheCfg.locking().concurrencyLevel() : 16;
       long cacheStopTimeout = cacheCfg != null ? cacheCfg.transaction().cacheStopTimeout() : 30000;

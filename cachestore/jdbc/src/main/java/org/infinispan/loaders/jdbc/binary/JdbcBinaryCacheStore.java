@@ -49,7 +49,7 @@ import java.util.Set;
  * @see JdbcBinaryCacheStoreConfig
  * @see org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore
  */
-public class JdbcBinaryCacheStore<T extends JdbcBinaryCacheStoreConfiguration> extends BucketBasedCacheStore <T>{
+public class JdbcBinaryCacheStore extends BucketBasedCacheStore <JdbcBinaryCacheStoreConfiguration>{
 
    private static final Log log = LogFactory.getLog(JdbcBinaryCacheStore.class, Log.class);
 
@@ -60,7 +60,7 @@ public class JdbcBinaryCacheStore<T extends JdbcBinaryCacheStoreConfiguration> e
    private DataManipulationHelper dmHelper;
 
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(JdbcBinaryCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       if (log.isTraceEnabled()) {
          log.tracef("Initializing JdbcBinaryCacheStore %s", configuration.getClass().getName());
       }

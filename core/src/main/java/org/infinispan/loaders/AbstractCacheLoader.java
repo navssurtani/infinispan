@@ -37,4 +37,12 @@ public abstract class AbstractCacheLoader<T extends CacheLoaderConfiguration> im
       this.cache = (Cache<Object, Object>) cache;
       this.timeService = cache.getAdvancedCache().getComponentRegistry().getTimeService();
    }
+
+   /**
+    * {@inheritDoc}
+    */
+   @Override
+   public T getConfiguration() {
+      return configuration;
+   }
 }

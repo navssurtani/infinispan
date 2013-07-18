@@ -56,7 +56,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @author Galder Zamarreño
  */
 @ThreadSafe
-public class JdbmCacheStore <T extends JdbmCacheStoreConfiguration> extends AbstractCacheStore <T>{
+public class JdbmCacheStore extends AbstractCacheStore <JdbmCacheStoreConfiguration>{
 
    private static final Log log = LogFactory.getLog(JdbmCacheStore.class, Log.class);
    private static final boolean trace = log.isTraceEnabled();
@@ -75,7 +75,7 @@ public class JdbmCacheStore <T extends JdbmCacheStoreConfiguration> extends Abst
    private BTree expiryTree;
 
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(JdbmCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       super.init(configuration, cache, m);
       this.configuration = configuration;
    }

@@ -36,7 +36,7 @@ import org.infinispan.util.logging.LogFactory;
  * @author Justin Hayes
  * @since 5.2
  */
-public class HBaseCacheStore<T extends HBaseCacheStoreConfiguration> extends AbstractCacheStore<T> {
+public class HBaseCacheStore extends AbstractCacheStore<HBaseCacheStoreConfiguration> {
    private static final Log log = LogFactory.getLog(HBaseCacheStore.class, Log.class);
 
    private String cacheName;
@@ -54,7 +54,7 @@ public class HBaseCacheStore<T extends HBaseCacheStoreConfiguration> extends Abs
    private HBaseFacade hbf;
 
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m)
+   public void init(HBaseCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m)
             throws CacheLoaderException {
       super.init(configuration, cache, m);
       this.cacheName = cache.getName();

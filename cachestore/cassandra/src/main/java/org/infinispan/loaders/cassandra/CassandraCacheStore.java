@@ -16,6 +16,7 @@ import java.util.Set;
 
 import net.dataforte.cassandra.pool.DataSource;
 
+import net.dataforte.cassandra.pool.PoolProperties;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.thrift.Column;
@@ -52,7 +53,7 @@ import org.infinispan.util.logging.LogFactory;
  *
  * @author Tristan Tarrant
  */
-public class CassandraCacheStore <T extends CassandraCacheStoreConfiguration> extends AbstractCacheStore <T> {
+public class CassandraCacheStore  extends AbstractCacheStore <CassandraCacheStoreConfiguration> {
 
    private static final String ENTRY_KEY_PREFIX = "entry_";
    private static final String ENTRY_COLUMN_NAME = "entry";
@@ -77,7 +78,7 @@ public class CassandraCacheStore <T extends CassandraCacheStoreConfiguration> ex
    static private Charset UTF8Charset = Charset.forName("UTF-8");
 
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m)
+   public void init(CassandraCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m)
             throws CacheLoaderException {
       super.init(configuration, cache, m);
       this.cacheName = cache.getName();
@@ -87,9 +88,10 @@ public class CassandraCacheStore <T extends CassandraCacheStoreConfiguration> ex
    public void start() throws CacheLoaderException {
 
       try {
+         PoolProperties poolProperties = new PoolProperties();
          if (!configuration.autoCreateKeyspace())
-            configuration.poolProperties.setKeySpace(configuration.keySpace());
-         dataSource = new DataSource(configuration.getPoolProperties());
+            poolProperties.setKeySpace(configuration.keySpace());
+         dataSource = new DataSource(poolProperties);
          readConsistencyLevel = configuration.readConsistencyLevel();
          writeConsistencyLevel = configuration.writeConsistencyLevel();
          entryColumnPath = new ColumnPath(configuration.entryColumnFamily()).setColumn(ENTRY_COLUMN_NAME

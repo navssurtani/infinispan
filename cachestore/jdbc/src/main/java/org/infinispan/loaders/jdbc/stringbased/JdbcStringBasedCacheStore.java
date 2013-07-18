@@ -63,8 +63,8 @@ import java.util.Set;
  * @see org.infinispan.loaders.keymappers.Key2StringMapper
  * @see org.infinispan.loaders.keymappers.DefaultTwoWayKey2StringMapper
  */
-public class JdbcStringBasedCacheStore <T extends JdbcStringBasedCacheStoreConfiguration> extends
-        LockSupportCacheStore <String, T> {
+public class JdbcStringBasedCacheStore extends
+        LockSupportCacheStore <String, JdbcStringBasedCacheStoreConfiguration> {
 
    private static final Log log = LogFactory.getLog(JdbcStringBasedCacheStore.class, Log.class);
 
@@ -80,7 +80,7 @@ public class JdbcStringBasedCacheStore <T extends JdbcStringBasedCacheStoreConfi
    private String cacheName;
 
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(JdbcStringBasedCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       super.init(configuration, cache, m);
       cacheName = cache.getName();
    }

@@ -25,7 +25,7 @@ import java.util.Set;
  * @author Guillaume Scheibel <guillaume.scheibel@gmail.com>
  */
 @ThreadSafe
-public class MongoDBCacheStore<T extends MongoDBCacheStoreConfiguration> extends AbstractCacheStore<T> {
+public class MongoDBCacheStore extends AbstractCacheStore<MongoDBCacheStoreConfiguration> {
 
    private static final Log log = LogFactory.getLog(MongoDBCacheStore.class, Log.class);
    private static final boolean trace = log.isTraceEnabled();
@@ -38,7 +38,7 @@ public class MongoDBCacheStore<T extends MongoDBCacheStoreConfiguration> extends
    private static final String VALUE_FIELD = "value";
 
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(MongoDBCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       super.init(configuration, cache, m);
    }
 

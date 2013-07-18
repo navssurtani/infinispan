@@ -43,13 +43,16 @@ import static org.infinispan.loaders.decorators.AbstractDelegatingStore.undelega
  * @author Manik Surtani
  * @since 4.0
  */
-public class ChainingCacheStore implements CacheStore {
+public class ChainingCacheStore implements CacheStore <CacheStoreConfiguration> {
    private static final Log log = LogFactory.getLog(ChainingCacheStore.class);
    private final ReadWriteLock loadersAndStoresMutex = new ReentrantReadWriteLock();
    @GuardedBy("loadersAndStoresMutex")
    private final Map<CacheLoader, CacheLoaderConfiguration> loaders = new LinkedHashMap<CacheLoader, CacheLoaderConfiguration>();
    @GuardedBy("loadersAndStoresMutex")
    private final Map<CacheStore, CacheStoreConfiguration> stores = new LinkedHashMap<CacheStore, CacheStoreConfiguration>();
+
+   // The CacheStoreConfiguration.
+   private CacheStoreConfiguration configuration;
 
    @Override
    public void store(InternalCacheEntry ed) throws CacheLoaderException {
@@ -169,15 +172,17 @@ public class ChainingCacheStore implements CacheStore {
    }
 
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(CacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
       loadersAndStoresMutex.readLock().lock();
       try {
          for (Map.Entry<CacheLoader, CacheLoaderConfiguration> e : loaders.entrySet()) {
-            e.getKey().init(LegacyConfigurationAdaptor.adapt(e.getValue()), cache, m);
+            e.getKey().init(e.getValue(), cache, m);
          }
       } finally {
          loadersAndStoresMutex.readLock().unlock();
       }
+      this.configuration = configuration;
    }
 
    @Override
@@ -250,10 +255,6 @@ public class ChainingCacheStore implements CacheStore {
       return false;
    }
 
-   private Class<? extends CacheLoaderConfig> getConfiguration() {
-      return null;
-   }
-
    @Override
    public void start() throws CacheLoaderException {
       loadersAndStoresMutex.readLock().lock();
@@ -272,6 +273,11 @@ public class ChainingCacheStore implements CacheStore {
       } finally {
          loadersAndStoresMutex.readLock().unlock();
       }
+   }
+
+   @Override
+   public CacheStoreConfiguration getConfiguration() {
+      return configuration;
    }
 
    public void addCacheLoader(CacheLoader loader, CacheLoaderConfiguration config) {

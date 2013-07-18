@@ -7,13 +7,18 @@ import org.infinispan.client.hotrod.Flag;
 import org.infinispan.client.hotrod.MetadataValue;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.client.hotrod.configuration.Configuration;
+import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
+import org.infinispan.client.hotrod.configuration.ExhaustedAction;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.container.InternalEntryFactory;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.versioning.NumericVersion;
 import org.infinispan.loaders.AbstractCacheStore;
 import org.infinispan.loaders.CacheLoaderException;
+import org.infinispan.loaders.remote.configuration.ConnectionPoolConfiguration;
 import org.infinispan.loaders.remote.configuration.RemoteCacheStoreConfiguration;
+import org.infinispan.loaders.remote.configuration.RemoteServerConfiguration;
 import org.infinispan.loaders.remote.logging.Log;
 import org.infinispan.commons.marshall.Marshaller;
 import org.infinispan.commons.marshall.StreamingMarshaller;
@@ -44,7 +49,7 @@ import java.util.concurrent.TimeUnit;
  * @since 4.1
  */
 @ThreadSafe
-public class RemoteCacheStore<T extends RemoteCacheStoreConfiguration> extends AbstractCacheStore<T> {
+public class RemoteCacheStore extends AbstractCacheStore<RemoteCacheStoreConfiguration> {
 
    private static final Log log = LogFactory.getLog(RemoteCacheStore.class, Log.class);
 
@@ -143,7 +148,7 @@ public class RemoteCacheStore<T extends RemoteCacheStoreConfiguration> extends A
    }
 
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(RemoteCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       super.init(configuration, cache, m);
    }
 
@@ -151,7 +156,7 @@ public class RemoteCacheStore<T extends RemoteCacheStoreConfiguration> extends A
    public void start() throws CacheLoaderException {
       super.start();
       if (configuration.properties().containsKey(ConfigurationProperties.MARSHALLER)) {
-         remoteCacheManager = new RemoteCacheManager(configuration, true);
+         remoteCacheManager = new RemoteCacheManager(buildRemoteConfiguration(configuration), true);
       } else {
          Marshaller marshaller = configuration.rawValues() ? new GenericJBossMarshaller() : getMarshaller();
          if (marshaller == null) {throw new IllegalStateException("Null marshaller not allowed!");}
@@ -206,5 +211,44 @@ public class RemoteCacheStore<T extends RemoteCacheStoreConfiguration> extends A
 
    public RemoteCache<Object, Object> getRemoteCache() {
       return remoteCache;
+   }
+
+   // Build a HotRod configuration bean
+   private Configuration buildRemoteConfiguration(RemoteCacheStoreConfiguration configuration) {
+      ConfigurationBuilder builder = new ConfigurationBuilder();
+
+      for (RemoteServerConfiguration s : configuration.servers()) {
+         builder.addServer()
+               .host(s.host())
+               .port(s.port());
+      }
+
+      ConnectionPoolConfiguration poolConfiguration = configuration.connectionPool();
+      Long connectionTimeout = configuration.connectionTimeout();
+      Long socketTimeout = configuration.socketTimeout();
+
+      builder.balancingStrategy(configuration.balancingStrategy())
+            .connectionPool()
+            .exhaustedAction(ExhaustedAction.valueOf(poolConfiguration.exhaustedAction().toString()))
+            .maxActive(poolConfiguration.maxActive())
+            .maxIdle(poolConfiguration.maxIdle())
+            .maxTotal(poolConfiguration.maxTotal())
+            .minIdle(poolConfiguration.minIdle())
+            .minEvictableIdleTime(poolConfiguration.minEvictableIdleTime())
+            .testWhileIdle(poolConfiguration.testWhileIdle())
+            .timeBetweenEvictionRuns(poolConfiguration.timeBetweenEvictionRuns())
+            .connectionTimeout(connectionTimeout.intValue())
+            .forceReturnValues(configuration.forceReturnValues())
+            .keySizeEstimate(configuration.keySizeEstimate())
+            .marshaller(configuration.marshaller())
+            .asyncExecutorFactory().factoryClass(configuration.asyncExecutorFactory().factory().getClass())
+            .classLoader(configuration.getClass().getClassLoader())
+            .pingOnStartup(configuration.pingOnStartup())
+            .protocolVersion(configuration.protocolVersion())
+            .socketTimeout(socketTimeout.intValue())
+            .tcpNoDelay(configuration.tcpNoDelay())
+            .transportFactory(configuration.transportFactory())
+            .valueSizeEstimate(configuration.valueSizeEstimate());
+      return builder.build();
    }
 }

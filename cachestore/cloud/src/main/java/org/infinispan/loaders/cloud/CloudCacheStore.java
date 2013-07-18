@@ -60,7 +60,7 @@ import com.google.common.collect.Maps;
  * @author Adrian Cole
  * @since 4.0
  */
-public class CloudCacheStore<T extends CloudCacheStoreConfiguration> extends BucketBasedCacheStore<T> {
+public class CloudCacheStore extends BucketBasedCacheStore<CloudCacheStoreConfiguration> {
    static final Log log = LogFactory.getLog(CloudCacheStore.class, Log.class);
    final ThreadLocal<List<Future<?>>> asyncCommandFutures = new ThreadLocal<List<Future<?>>>();
    String containerName;
@@ -91,12 +91,12 @@ public class CloudCacheStore<T extends CloudCacheStoreConfiguration> extends Buc
    }
 
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m)
+   public void init(CloudCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m)
          throws CacheLoaderException {
       init(configuration, cache, m, null, null, null, true);
    }
 
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m, BlobStoreContext ctx,
+   public void init(CloudCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m, BlobStoreContext ctx,
                     BlobStore blobStore, AsyncBlobStore asyncBlobStore, boolean constructInternalBlobstores)
          throws CacheLoaderException {
       super.init(configuration, cache, m);
