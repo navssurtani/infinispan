@@ -19,12 +19,11 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.SingleFileCacheStoreConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
 import org.infinispan.loaders.AbstractCacheStore;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.CacheStore;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.util.logging.Log;
@@ -57,40 +56,26 @@ import org.infinispan.util.logging.LogFactory;
  * @author Karsten Blees
  * @since 6.0
  */
-@CacheLoaderMetadata(configurationClass = SingleFileCacheStoreConfig.class)
-public class SingleFileCacheStore extends AbstractCacheStore {
+public class SingleFileCacheStore extends AbstractCacheStore <SingleFileCacheStoreConfiguration>{
 
    private static final Log log = LogFactory.getLog(SingleFileCacheStore.class);
 
    private static final byte[] MAGIC = new byte[] { 'F', 'C', 'S', '1' };
-
    private static final byte[] ZERO_INT = { 0, 0, 0, 0 };
-
    private static final int KEYLEN_POS = 4;
-
    private static final int KEY_POS = 4 + 4 + 4 + 8;
 
-   private SingleFileCacheStoreConfig config;
-
    private FileChannel file;
-
    private Map<Object, FileEntry> entries;
-
    private SortedSet<FileEntry> freeList;
-
    private long filePos = MAGIC.length;
 
-   /** {@inheritDoc} */
-   @Override
-   public Class<? extends CacheLoaderConfig> getConfigurationClass() {
-      return SingleFileCacheStoreConfig.class;
-   }
 
    /** {@inheritDoc} */
    @Override
-   public void init(CacheLoaderConfig config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(SingleFileCacheStoreConfiguration config, Cache<?, ?> cache, StreamingMarshaller m) throws
+           CacheLoaderException {
       super.init(config, cache, m);
-      this.config = (SingleFileCacheStoreConfig) config;
    }
 
    /** {@inheritDoc} */
@@ -99,7 +84,7 @@ public class SingleFileCacheStore extends AbstractCacheStore {
       super.start();
       try {
          // open the data file
-         String location = config.getLocation();
+         String location = configuration.location();
          if (location == null || location.trim().length() == 0)
             location = "Infinispan-SingleFileCacheStore";
          File dir = new File(location);
@@ -112,7 +97,7 @@ public class SingleFileCacheStore extends AbstractCacheStore {
          // initialize data structures
          // only use LinkedHashMap (LRU) for entries when cache store is bounded
          final Map<Object, FileEntry> entryMap;
-         if (config.getMaxEntries() > 0)
+         if (configuration.maxEntries() > 0)
             entryMap = new LinkedHashMap<Object, FileEntry>(16, 0.75f, true);
          else
             entryMap = new HashMap<Object, FileEntry>();
@@ -298,9 +283,9 @@ public class SingleFileCacheStore extends AbstractCacheStore {
     * @return FileEntry to evict, or null (if unbounded or capacity is not yet reached)
     */
    private FileEntry evict() {
-      if (config.getMaxEntries() > 0) {
+      if (configuration.maxEntries() > 0) {
          synchronized (entries) {
-            if (entries.size() > config.getMaxEntries()) {
+            if (entries.size() > configuration.maxEntries()) {
                Iterator<FileEntry> it = entries.values().iterator();
                FileEntry fe = it.next();
                it.remove();

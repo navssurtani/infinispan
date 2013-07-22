@@ -524,12 +524,6 @@ public class CacheImpl<K, V> implements AdvancedCache<K, V> {
    }
 
    @Override
-   @Deprecated
-   public org.infinispan.config.Configuration getConfiguration() {
-      return LegacyConfigurationAdaptor.adapt(config);
-   }
-
-   @Override
    public Configuration getCacheConfiguration() {
       return config;
    }
@@ -789,7 +783,7 @@ public class CacheImpl<K, V> implements AdvancedCache<K, V> {
    )
    public String getCacheName() {
       String name = getName().equals(CacheContainer.DEFAULT_CACHE_NAME) ? "Default Cache" : getName();
-      return name + "(" + getConfiguration().getCacheModeString().toLowerCase() + ")";
+      return name + "(" + getCacheConfiguration().clustering().cacheMode().toString().toLowerCase() + ")";
    }
 
    /**
@@ -801,10 +795,6 @@ public class CacheImpl<K, V> implements AdvancedCache<K, V> {
          dataType = DataType.TRAIT,
          displayType = DisplayType.SUMMARY
    )
-   public String getConfigurationAsXmlString() {
-      return getConfiguration().toXmlString();
-   }
-
    @Override
    public String getVersion() {
       return Version.VERSION;

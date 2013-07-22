@@ -1,11 +1,8 @@
 package org.infinispan.loaders.jdbc.configuration;
 
 import org.infinispan.configuration.cache.AsyncStoreConfiguration;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
-import org.infinispan.configuration.cache.LegacyLoaderAdapter;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
 import org.infinispan.loaders.jdbc.DatabaseType;
-import org.infinispan.loaders.jdbc.mixed.JdbcMixedCacheStoreConfig;
 import org.infinispan.commons.configuration.BuiltBy;
 import org.infinispan.commons.util.TypedProperties;
 
@@ -17,7 +14,7 @@ import org.infinispan.commons.util.TypedProperties;
  * @since 5.2
  */
 @BuiltBy(JdbcMixedCacheStoreConfigurationBuilder.class)
-public class JdbcMixedCacheStoreConfiguration extends AbstractJdbcCacheStoreConfiguration implements LegacyLoaderAdapter<JdbcMixedCacheStoreConfig> {
+public class JdbcMixedCacheStoreConfiguration extends AbstractJdbcCacheStoreConfiguration {
 
    private final int batchSize;
    private final int fetchSize;
@@ -62,48 +59,6 @@ public class JdbcMixedCacheStoreConfiguration extends AbstractJdbcCacheStoreConf
 
    public DatabaseType databaseType() {
       return databaseType;
-   }
-
-   @Override
-   public JdbcMixedCacheStoreConfig adapt() {
-      JdbcMixedCacheStoreConfig config = new JdbcMixedCacheStoreConfig();
-
-      // StoreConfiguration
-      LegacyConfigurationAdaptor.adapt(this, config);
-
-      // ConnectionFactory
-      ((LegacyConnectionFactoryAdaptor) connectionFactory()).adapt(config);
-
-      // JdbcStringBasedCacheStoreConfiguration
-      config.setKey2StringMapperClass(key2StringMapper);
-
-      // TableManipulation
-      config.setCreateTableOnStartForBinary(binaryTable().createOnStart());
-      config.setDropTableOnExitForBinary(binaryTable().dropOnExit());
-      config.setTableNamePrefixForBinary(binaryTable().tableNamePrefix());
-      config.setDataColumnNameForBinary(binaryTable().dataColumnName());
-      config.setDataColumnTypeForBinary(binaryTable().dataColumnType());
-      config.setIdColumnNameForBinary(binaryTable().idColumnName());
-      config.setIdColumnTypeForBinary(binaryTable().idColumnType());
-      config.setTimestampColumnNameForBinary(binaryTable().timestampColumnName());
-      config.setTimestampColumnTypeForBinary(binaryTable().timestampColumnType());
-
-      config.setCreateTableOnStartForStrings(stringTable().createOnStart());
-      config.setDropTableOnExitForStrings(stringTable().dropOnExit());
-      config.setTableNamePrefixForStrings(stringTable().tableNamePrefix());
-      config.setDataColumnNameForStrings(stringTable().dataColumnName());
-      config.setDataColumnTypeForStrings(stringTable().dataColumnType());
-      config.setIdColumnNameForStrings(stringTable().idColumnName());
-      config.setIdColumnTypeForStrings(stringTable().idColumnType());
-      config.setTimestampColumnNameForStrings(stringTable().timestampColumnName());
-      config.setTimestampColumnTypeForStrings(stringTable().timestampColumnType());
-
-      // Global TableManipulation settings
-      config.setBatchSize(batchSize);
-      config.setFetchSize(fetchSize);
-      config.setDatabaseType(databaseType);
-
-      return config;
    }
 
    @Override

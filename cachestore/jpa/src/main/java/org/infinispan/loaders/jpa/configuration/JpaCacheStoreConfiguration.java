@@ -2,10 +2,7 @@ package org.infinispan.loaders.jpa.configuration;
 
 import org.infinispan.configuration.cache.AbstractLockSupportStoreConfiguration;
 import org.infinispan.configuration.cache.AsyncStoreConfiguration;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
-import org.infinispan.configuration.cache.LegacyLoaderAdapter;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
-import org.infinispan.loaders.jpa.JpaCacheStoreConfig;
 import org.infinispan.commons.configuration.BuiltBy;
 import org.infinispan.commons.util.TypedProperties;
 
@@ -15,7 +12,7 @@ import org.infinispan.commons.util.TypedProperties;
  *
  */
 @BuiltBy(JpaCacheStoreConfigurationBuilder.class)
-public class JpaCacheStoreConfiguration extends AbstractLockSupportStoreConfiguration implements LegacyLoaderAdapter<JpaCacheStoreConfig>{
+public class JpaCacheStoreConfiguration extends AbstractLockSupportStoreConfiguration {
 	final private String persistenceUnitName;
 	final private Class<?> entityClass;
 	final private long batchSize;
@@ -50,17 +47,4 @@ public class JpaCacheStoreConfiguration extends AbstractLockSupportStoreConfigur
 	public long batchSize() {
 	   return batchSize;
 	}
-
-	@Override
-	public JpaCacheStoreConfig adapt() {
-		JpaCacheStoreConfig config = new JpaCacheStoreConfig();
-
-		LegacyConfigurationAdaptor.adapt(this, config);
-		config.setPersistenceUnitName(persistenceUnitName);
-		config.setEntityClass(entityClass);
-
-		return config;
-	}
-
-
 }

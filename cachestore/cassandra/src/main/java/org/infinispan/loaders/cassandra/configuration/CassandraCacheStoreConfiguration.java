@@ -6,16 +6,12 @@ import java.util.List;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.infinispan.configuration.cache.AbstractStoreConfiguration;
 import org.infinispan.configuration.cache.AsyncStoreConfiguration;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
-import org.infinispan.configuration.cache.LegacyLoaderAdapter;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
-import org.infinispan.loaders.cassandra.CassandraCacheStoreConfig;
 import org.infinispan.commons.configuration.BuiltBy;
 import org.infinispan.commons.util.TypedProperties;
 
 @BuiltBy(CassandraCacheStoreConfigurationBuilder.class)
-public class CassandraCacheStoreConfiguration extends AbstractStoreConfiguration implements
-      LegacyLoaderAdapter<CassandraCacheStoreConfig> {
+public class CassandraCacheStoreConfiguration extends AbstractStoreConfiguration {
 
    private final boolean autoCreateKeyspace;
    private final String configurationPropertiesFile;
@@ -111,35 +107,4 @@ public class CassandraCacheStoreConfiguration extends AbstractStoreConfiguration
    public ConsistencyLevel writeConsistencyLevel() {
       return writeConsistencyLevel;
    }
-
-   @Override
-   public CassandraCacheStoreConfig adapt() {
-      CassandraCacheStoreConfig config = new CassandraCacheStoreConfig();
-
-      LegacyConfigurationAdaptor.adapt(this, config);
-
-      config.setAutoCreateKeyspace(autoCreateKeyspace);
-      config.setConfigurationPropertiesFile(configurationPropertiesFile);
-      config.setEntryColumnFamily(entryColumnFamily);
-      config.setExpirationColumnFamily(expirationColumnFamily);
-      config.setFramed(framed);
-      StringBuilder host = new StringBuilder();
-      for (CassandraServerConfiguration s : this.servers) {
-         if (host.length() > 0)
-            host.append(";");
-         host.append(s.host());
-      }
-      config.setHost(host.toString());
-      config.setKeyMapper(keyMapper);
-      config.setKeySpace(keySpace);
-      config.setPassword(password);
-      config.setReadConsistencyLevel(readConsistencyLevel);
-      config.setSharedKeyspace(sharedKeyspace);
-      config.setUsername(username);
-      config.setWriteConsistencyLevel(writeConsistencyLevel);
-
-      return config;
-   }
-
-
 }

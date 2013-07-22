@@ -2,16 +2,12 @@ package org.infinispan.loaders.cloud.configuration;
 
 import org.infinispan.configuration.cache.AbstractStoreConfiguration;
 import org.infinispan.configuration.cache.AsyncStoreConfiguration;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
-import org.infinispan.configuration.cache.LegacyLoaderAdapter;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
-import org.infinispan.loaders.cloud.CloudCacheStoreConfig;
 import org.infinispan.commons.configuration.BuiltBy;
 import org.infinispan.commons.util.TypedProperties;
 
 @BuiltBy(CloudCacheStoreConfigurationBuilder.class)
-public class CloudCacheStoreConfiguration extends AbstractStoreConfiguration implements
-      LegacyLoaderAdapter<CloudCacheStoreConfig> {
+public class CloudCacheStoreConfiguration extends AbstractStoreConfiguration {
 
    private final String identity;
    private final String password;
@@ -45,28 +41,6 @@ public class CloudCacheStoreConfiguration extends AbstractStoreConfiguration imp
       this.maxConnections = maxConnections;
       this.secure = secure;
       this.compress = compress;
-   }
-
-   @Override
-   public CloudCacheStoreConfig adapt() {
-      CloudCacheStoreConfig config = new CloudCacheStoreConfig();
-
-      LegacyConfigurationAdaptor.adapt(this, config);
-
-      config.setIdentity(identity);
-      config.setPassword(password);
-      config.setBucketPrefix(bucketPrefix);
-      config.setProxyHost(proxyHost);
-      config.setProxyPort(Integer.toString(proxyPort));
-      config.setRequestTimeout(requestTimeout);
-      config.setLazyPurgingOnly(lazyPurgingOnly);
-      config.setCloudService(cloudService);
-      config.setCloudServiceLocation(cloudServiceLocation);
-      config.setMaxConnections(maxConnections);
-      config.setSecure(secure);
-      config.setCompress(compress);
-
-      return config;
    }
 
    public String bucketPrefix() {

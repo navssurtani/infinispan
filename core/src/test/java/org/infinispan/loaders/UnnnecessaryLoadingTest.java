@@ -8,7 +8,6 @@ import org.infinispan.configuration.cache.AbstractStoreConfiguration;
 import org.infinispan.configuration.cache.AbstractStoreConfigurationBuilder;
 import org.infinispan.configuration.cache.AsyncStoreConfiguration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.infinispan.configuration.cache.LegacyLoaderAdapter;
 import org.infinispan.configuration.cache.LoadersConfigurationBuilder;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
@@ -162,7 +161,7 @@ public class UnnnecessaryLoadingTest extends SingleCacheManagerTest {
       countingCS.numContains = 0;
    }
 
-   public static class CountingCacheStore extends AbstractCacheStore {
+   public static class CountingCacheStore extends AbstractCacheStore <CountingCacheStoreConfiguration> {
       public int numLoads, numContains;
 
       @Override
@@ -217,26 +216,18 @@ public class UnnnecessaryLoadingTest extends SingleCacheManagerTest {
          return false;
       }
 
-      private Class<? extends CacheLoaderConfig> getConfiguration() {
-         return CountingCacheStoreConfig.class;
-      }
-
       private void incrementLoads() {
          numLoads++;
       }
    }
 
    @BuiltBy(CountingCacheStoreConfigurationBuilder.class)
-   public static class CountingCacheStoreConfiguration extends AbstractStoreConfiguration implements LegacyLoaderAdapter<CountingCacheStoreConfig>{
+   public static class CountingCacheStoreConfiguration extends AbstractStoreConfiguration {
       protected CountingCacheStoreConfiguration(boolean purgeOnStartup, boolean purgeSynchronously, int purgerThreads, boolean fetchPersistentState, boolean ignoreModifications,
             TypedProperties properties, AsyncStoreConfiguration async, SingletonStoreConfiguration singletonStore) {
          super(purgeOnStartup, purgeSynchronously, purgerThreads, fetchPersistentState, ignoreModifications, properties, async, singletonStore);
       }
 
-      @Override
-      public CountingCacheStoreConfig adapt() {
-         return new CountingCacheStoreConfig();
-      }
    }
 
    public static class CountingCacheStoreConfigurationBuilder extends AbstractStoreConfigurationBuilder<CountingCacheStoreConfiguration, CountingCacheStoreConfigurationBuilder> {
@@ -268,11 +259,5 @@ public class UnnnecessaryLoadingTest extends SingleCacheManagerTest {
          return this;
       }
 
-   }
-
-   public static class CountingCacheStoreConfig extends AbstractCacheStoreConfig {
-      public CountingCacheStoreConfig() {
-         setCacheLoaderClassName(CountingCacheStore.class.getName());
-      }
    }
 }

@@ -522,7 +522,6 @@ public class AsyncStoreTest extends AbstractInfinispanTest {
       }
    }
 
-   @CacheLoaderMetadata(configurationClass = LockableCacheStoreConfig.class)
    public static class LockableCacheStore extends DummyInMemoryCacheStore {
       private final ReentrantLock lock = new ReentrantLock();
 

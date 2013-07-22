@@ -16,7 +16,6 @@ import org.infinispan.interceptors.base.CommandInterceptor;
 import org.infinispan.loaders.AbstractCacheLoaderConfig;
 import org.infinispan.loaders.AbstractCacheStoreConfig;
 import org.infinispan.loaders.CacheLoader;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.CacheStore;
 import org.infinispan.loaders.CacheStoreConfig;

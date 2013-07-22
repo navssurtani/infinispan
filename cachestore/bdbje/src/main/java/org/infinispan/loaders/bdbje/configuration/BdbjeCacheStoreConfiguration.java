@@ -2,16 +2,12 @@ package org.infinispan.loaders.bdbje.configuration;
 
 import org.infinispan.configuration.cache.AbstractStoreConfiguration;
 import org.infinispan.configuration.cache.AsyncStoreConfiguration;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
-import org.infinispan.configuration.cache.LegacyLoaderAdapter;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
-import org.infinispan.loaders.bdbje.BdbjeCacheStoreConfig;
 import org.infinispan.commons.configuration.BuiltBy;
 import org.infinispan.commons.util.TypedProperties;
 
 @BuiltBy(BdbjeCacheStoreConfigurationBuilder.class)
-public class BdbjeCacheStoreConfiguration extends AbstractStoreConfiguration implements
-      LegacyLoaderAdapter<BdbjeCacheStoreConfig> {
+public class BdbjeCacheStoreConfiguration extends AbstractStoreConfiguration {
 
    private final String location;
    private final long lockAcquistionTimeout;
@@ -65,22 +61,4 @@ public class BdbjeCacheStoreConfiguration extends AbstractStoreConfiguration imp
    public String environmentPropertiesFile() {
       return environmentPropertiesFile;
    }
-
-   @Override
-   public BdbjeCacheStoreConfig adapt() {
-      BdbjeCacheStoreConfig config = new BdbjeCacheStoreConfig();
-
-      LegacyConfigurationAdaptor.adapt(this, config);
-
-      config.setCacheDbNamePrefix(cacheDbNamePrefix);
-      config.setCatalogDbName(catalogDbName);
-      config.setEnvironmentPropertiesFile(environmentPropertiesFile);
-      config.setExpiryDbNamePrefix(expiryDbPrefix);
-      config.setLocation(location);
-      config.setLockAcquistionTimeout(lockAcquistionTimeout);
-      config.setMaxTxRetries(maxTxRetries);
-
-      return config;
-   }
-
 }

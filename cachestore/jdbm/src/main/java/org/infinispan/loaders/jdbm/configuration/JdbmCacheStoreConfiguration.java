@@ -2,16 +2,12 @@ package org.infinispan.loaders.jdbm.configuration;
 
 import org.infinispan.configuration.cache.AbstractStoreConfiguration;
 import org.infinispan.configuration.cache.AsyncStoreConfiguration;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
-import org.infinispan.configuration.cache.LegacyLoaderAdapter;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
-import org.infinispan.loaders.jdbm.JdbmCacheStoreConfig;
 import org.infinispan.commons.configuration.BuiltBy;
 import org.infinispan.commons.util.TypedProperties;
 
 @BuiltBy(JdbmCacheStoreConfigurationBuilder.class)
-public class JdbmCacheStoreConfiguration extends AbstractStoreConfiguration implements
-      LegacyLoaderAdapter<JdbmCacheStoreConfig> {
+public class JdbmCacheStoreConfiguration extends AbstractStoreConfiguration {
    private final String comparatorClassName;
    private final int expiryQueueSize;
    private final String location;
@@ -36,19 +32,6 @@ public class JdbmCacheStoreConfiguration extends AbstractStoreConfiguration impl
 
    public String location() {
       return location;
-   }
-
-   @Override
-   public JdbmCacheStoreConfig adapt() {
-      JdbmCacheStoreConfig config = new JdbmCacheStoreConfig();
-
-      LegacyConfigurationAdaptor.adapt(this, config);
-
-      config.setComparatorClassName(comparatorClassName);
-      config.setExpiryQueueSize(expiryQueueSize);
-      config.setLocation(location);
-
-      return config;
    }
 
 }

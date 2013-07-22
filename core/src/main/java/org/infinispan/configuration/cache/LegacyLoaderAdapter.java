@@ -1,6 +1,5 @@
 package org.infinispan.configuration.cache;
 
-import org.infinispan.loaders.CacheLoaderConfig;
 
 /**
  * LegacyLoaderAdapter. This interface should disappear in 6.0
@@ -9,6 +8,6 @@ import org.infinispan.loaders.CacheLoaderConfig;
  * @since 5.2
  */
 @Deprecated
-public interface LegacyLoaderAdapter<T extends CacheLoaderConfig> {
+public interface LegacyLoaderAdapter {
    T adapt();
 }
