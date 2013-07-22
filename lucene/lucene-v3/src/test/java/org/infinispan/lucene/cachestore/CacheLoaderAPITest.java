@@ -58,12 +58,11 @@ public class CacheLoaderAPITest extends SingleCacheManagerTest {
       FSDirectory luceneDirectory = FSDirectory.open(subDir);
       luceneDirectory.close();
       ConfigurationBuilder builder = new ConfigurationBuilder();
-      builder
-         .loaders()
-            .addLoader()
-               .cacheLoader( new LuceneCacheLoader() )
-                  .addProperty(LuceneCacheLoaderConfig.LOCATION_OPTION, rootDir.getAbsolutePath())
-                  .addProperty(LuceneCacheLoaderConfig.AUTO_CHUNK_SIZE_OPTION, "110");
+      builder.loaders()
+            .addLoader(LuceneCacheLoaderConfigurationBuilder.class)
+               .autoChunkSize(110)
+               .location(rootDir.getAbsolutePath());
+
       return TestCacheManagerFactory.createCacheManager(builder);
    }
 
@@ -335,7 +334,7 @@ public class CacheLoaderAPITest extends SingleCacheManagerTest {
       LuceneCacheLoader cacheLoader = (LuceneCacheLoader) TestingUtil.extractComponent(cacheManager.getCache(),
                                                                     CacheLoaderManager.class).getCacheLoader();
 
-      AssertJUnit.assertSame(cacheLoader.getConfiguration(), LuceneCacheLoaderConfig.class);
+      AssertJUnit.assertSame(cacheLoader.getConfiguration(), LuceneCacheLoaderConfiguration.class);
    }
 
    @DataProvider(name = "passEntriesCount")
