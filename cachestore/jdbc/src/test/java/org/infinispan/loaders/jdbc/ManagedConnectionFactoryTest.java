@@ -2,8 +2,12 @@ package org.infinispan.loaders.jdbc;
 
 import org.infinispan.loaders.BaseCacheStoreTest;
 import org.infinispan.loaders.CacheLoaderException;
+import org.infinispan.loaders.jdbc.configuration.ConnectionFactoryConfiguration;
+import org.infinispan.loaders.jdbc.configuration.ConnectionFactoryConfigurationBuilder;
+import org.infinispan.loaders.jdbc.configuration.JdbcStringBasedCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactoryConfig;
 import org.infinispan.loaders.jdbc.connectionfactory.SimpleConnectionFactory;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.UnitTestDatabaseManager;
 import org.infinispan.test.jndi.DummyContextFactory;
 import org.testng.annotations.AfterClass;
@@ -58,9 +62,17 @@ public abstract class ManagedConnectionFactoryTest extends BaseCacheStoreTest {
       private SimpleConnectionFactory simpleFactory;
 
       public void start() throws CacheLoaderException {
-         ConnectionFactoryConfig config = UnitTestDatabaseManager.getUniqueConnectionFactoryConfig();
+
+         JdbcStringBasedCacheStoreConfigurationBuilder storeBuilder = TestCacheManagerFactory
+               .getDefaultCacheConfiguration(false)
+               .loaders()
+                  .addLoader(JdbcStringBasedCacheStoreConfigurationBuilder.class);
+
+         ConnectionFactoryConfigurationBuilder factoryBuilder = UnitTestDatabaseManager
+               .configureUniqueConnectionFactory(storeBuilder);
+         ConnectionFactoryConfiguration factoryConfiguration = (ConnectionFactoryConfiguration)factoryBuilder.create();
          simpleFactory = new SimpleConnectionFactory();
-         simpleFactory.start(config, Thread.currentThread().getContextClassLoader());
+         simpleFactory.start(factoryConfiguration, Thread.currentThread().getContextClassLoader());
       }
 
       public void stop() {

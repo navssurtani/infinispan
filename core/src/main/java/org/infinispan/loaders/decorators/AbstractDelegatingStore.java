@@ -2,6 +2,7 @@ package org.infinispan.loaders.decorators;
 
 import org.infinispan.Cache;
 import org.infinispan.commons.marshall.StreamingMarshaller;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.transaction.xa.GlobalTransaction;
 import org.infinispan.container.entries.InternalCacheEntry;
@@ -22,10 +23,10 @@ import java.util.Set;
  * @author Manik Surtani
  * @since 4.0
  */
-public class AbstractDelegatingStore<T> implements CacheStore<T> {
+public class AbstractDelegatingStore implements CacheStore {
 
    CacheStore delegate;
-   T configuration;
+   CacheStoreConfiguration configuration;
 
    public AbstractDelegatingStore(CacheStore delegate) {
       this.delegate = delegate;
@@ -90,7 +91,8 @@ public class AbstractDelegatingStore<T> implements CacheStore<T> {
    }
 
    @Override
-   public void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
       delegate.init(configuration, cache, m);
    }
 
@@ -130,7 +132,7 @@ public class AbstractDelegatingStore<T> implements CacheStore<T> {
    }
 
    @Override
-   public T getConfiguration() {
+   public CacheLoaderConfiguration getConfiguration() {
       return configuration;
    }
 

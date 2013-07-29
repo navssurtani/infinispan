@@ -1,6 +1,7 @@
 package org.infinispan.loaders.jdbc.stringbased;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
 import org.infinispan.commons.io.ByteBuffer;
@@ -40,9 +41,10 @@ import java.util.Set;
  * Note that only the keys are stored as strings, the values are still saved as binary data. Using a character
  * data type for the value column will result in unmarshalling errors.
  * <p/>
- * The actual storage table is defined through configuration {@link JdbcStringBasedCacheStoreConfig}. The table can be
+ * The actual storage table is defined through configuration {@link JdbcStringBasedCacheStoreConfiguration}. The table can
+ * be
  * created/dropped on-the-fly, at deployment time. For more details consult javadoc for {@link
- * JdbcStringBasedCacheStoreConfig}.
+ * JdbcStringBasedCacheStoreConfiguration}.
  * <p/>
  * It is recommended to use {@link org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore}} over
  * {@link org.infinispan.loaders.jdbc.binary.JdbcBinaryCacheStore}} whenever it is possible, as is has a better performance.
@@ -64,7 +66,7 @@ import java.util.Set;
  * @see org.infinispan.loaders.keymappers.DefaultTwoWayKey2StringMapper
  */
 public class JdbcStringBasedCacheStore extends
-        LockSupportCacheStore <String, JdbcStringBasedCacheStoreConfiguration> {
+        LockSupportCacheStore <String> {
 
    private static final Log log = LogFactory.getLog(JdbcStringBasedCacheStore.class, Log.class);
 
@@ -73,6 +75,8 @@ public class JdbcStringBasedCacheStore extends
     */
    private static final byte STRING_STREAM_DELIMITER = 100;
 
+   private JdbcStringBasedCacheStoreConfiguration configuration;
+
    private Key2StringMapper key2StringMapper;
    private ConnectionFactory connectionFactory;
    private TableManipulation tableManipulation;
@@ -80,7 +84,14 @@ public class JdbcStringBasedCacheStore extends
    private String cacheName;
 
    @Override
-   public void init(JdbcStringBasedCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache,
+                    StreamingMarshaller m) throws CacheLoaderException {
+      if (configuration instanceof JdbcStringBasedCacheStoreConfiguration) {
+         this.configuration = (JdbcStringBasedCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               JdbcStringBasedCacheStoreConfiguration.class.getName());
+      }
       super.init(configuration, cache, m);
       cacheName = cache.getName();
    }

@@ -9,7 +9,6 @@ import org.infinispan.configuration.parsing.Namespaces;
 import org.infinispan.configuration.parsing.ParseUtils;
 import org.infinispan.configuration.parsing.Parser53;
 import org.infinispan.configuration.parsing.XMLExtendedStreamReader;
-import org.infinispan.loaders.leveldb.LevelDBCacheStoreConfig.ImplementationType;
 import org.iq80.leveldb.CompressionType;
 
 import javax.xml.stream.XMLStreamConstants;

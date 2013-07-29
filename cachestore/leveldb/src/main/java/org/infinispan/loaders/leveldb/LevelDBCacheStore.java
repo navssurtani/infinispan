@@ -15,11 +15,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.infinispan.Cache;
 import org.infinispan.commons.util.InfinispanCollections;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.LockSupportCacheStore;
-import org.infinispan.loaders.leveldb.LevelDBCacheStoreConfig.ImplementationType;
+import org.infinispan.loaders.leveldb.configuration.ImplementationType;
 import org.infinispan.loaders.leveldb.configuration.LevelDBCacheStoreConfiguration;
 import org.infinispan.loaders.leveldb.logging.Log;
 import org.infinispan.commons.CacheConfigurationException;
@@ -33,7 +34,7 @@ import org.iq80.leveldb.DBIterator;
 import org.iq80.leveldb.Options;
 import org.iq80.leveldb.ReadOptions;
 
-public class LevelDBCacheStore extends LockSupportCacheStore<Integer, LevelDBCacheStoreConfiguration> {
+public class LevelDBCacheStore extends LockSupportCacheStore<Integer> {
 	private static final Log log = LogFactory.getLog(LevelDBCacheStore.class, Log.class);
 
 	private static final String JNI_DB_FACTORY_CLASS_NAME = "org.fusesource.leveldbjni.JniDBFactory";
@@ -45,11 +46,19 @@ public class LevelDBCacheStore extends LockSupportCacheStore<Integer, LevelDBCac
 	private DB db;
 	private DB expiredDb;
 
-	@Override
-	public void init(LevelDBCacheStoreConfiguration configuration, Cache<?, ?> cache,
-			StreamingMarshaller m) throws CacheLoaderException {
-		super.init(configuration, cache, m);
+   private LevelDBCacheStoreConfiguration configuration;
 
+	@Override
+	public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache,
+			StreamingMarshaller m) throws CacheLoaderException {
+
+      if (configuration instanceof LevelDBCacheStoreConfiguration) {
+         this.configuration = (LevelDBCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               LevelDBCacheStoreConfiguration.class.getName());
+      }
+      super.init(configuration, cache, m);
 		this.dbFactory = newDbFactory();
 
 		if (this.dbFactory == null) {

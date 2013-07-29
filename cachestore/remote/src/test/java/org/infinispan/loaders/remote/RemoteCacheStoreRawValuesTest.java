@@ -12,6 +12,7 @@ import org.infinispan.eviction.EvictionStrategy;
 import org.infinispan.loaders.BaseCacheStoreTest;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheStore;
+import org.infinispan.loaders.remote.configuration.RemoteCacheStoreConfigurationBuilder;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.server.hotrod.HotRodServer;
 import org.infinispan.test.TestingUtil;
@@ -43,18 +44,26 @@ public class RemoteCacheStoreRawValuesTest extends BaseCacheStoreTest {
       localCacheManager = TestCacheManagerFactory.createCacheManager(hotRodCacheConfiguration(cb));
       hrServer = TestHelper.startHotRodServer(localCacheManager);
 
-      RemoteCacheStoreConfig remoteCacheStoreConfig = new RemoteCacheStoreConfig();
-      remoteCacheStoreConfig.setPurgeSynchronously(true);
-      remoteCacheStoreConfig.setUseDefaultRemoteCache(true);
-      remoteCacheStoreConfig.setRawValues(true);
-      assert remoteCacheStoreConfig.isUseDefaultRemoteCache();
+      RemoteCacheStoreConfigurationBuilder storeConfigurationBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(RemoteCacheStoreConfigurationBuilder.class)
+                  .purgeSynchronously(true)
+                  .rawValues(true)
+                  .remoteCacheName("remote-cache");
+
+//      RemoteCacheStoreConfig remoteCacheStoreConfig = new RemoteCacheStoreConfig();
+//      remoteCacheStoreConfig.setPurgeSynchronously(true);
+//      remoteCacheStoreConfig.setUseDefaultRemoteCache(true);
+//      remoteCacheStoreConfig.setRawValues(true);
+//      assert remoteCacheStoreConfig.isUseDefaultRemoteCache();
 
       Properties properties = new Properties();
       properties.put("infinispan.client.hotrod.server_list", "localhost:" + hrServer.getPort());
-      remoteCacheStoreConfig.setHotRodClientProperties(properties);
+//      remoteCacheStoreConfig.setHotRodClientProperties(properties);
 
       RemoteCacheStore remoteCacheStore = new RemoteCacheStore();
-      remoteCacheStore.init(remoteCacheStoreConfig, getCache(), getMarshaller());
+      remoteCacheStore.init(storeConfigurationBuilder.create(), getCache(), getMarshaller());
       remoteCacheStore.setInternalCacheEntryFactory(new InternalEntryFactoryImpl());
       remoteCacheStore.start();
 

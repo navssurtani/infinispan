@@ -6,6 +6,8 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.infinispan.container.entries.InternalCacheEntry;
+import org.infinispan.loaders.jdbm.configuration.JdbmCacheStoreConfigurationBuilder;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.TestInternalCacheEntryFactory;
 import org.infinispan.loaders.BaseCacheStoreTest;
 import org.infinispan.loaders.CacheLoaderException;
@@ -36,10 +38,15 @@ public class JdbmCacheStoreTest extends BaseCacheStoreTest {
    protected CacheStore createCacheStore() throws CacheLoaderException {
       clearTempDir();
       fcs = new JdbmCacheStore();
-      JdbmCacheStoreConfig cfg = new JdbmCacheStoreConfig();
-      cfg.setLocation(tmpDirectory);
-      cfg.setPurgeSynchronously(true); // for more accurate unit testing
-      fcs.init(cfg, getCache(), getMarshaller());
+
+      JdbmCacheStoreConfigurationBuilder storeBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(JdbmCacheStoreConfigurationBuilder.class)
+                  .location(this.tmpDirectory)
+                  .purgeSynchronously(true);
+
+      fcs.init(storeBuilder.create(), getCache(), getMarshaller());
       fcs.start();
       return fcs;
    }

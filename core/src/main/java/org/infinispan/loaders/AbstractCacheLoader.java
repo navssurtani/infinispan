@@ -13,12 +13,12 @@ import org.infinispan.util.TimeService;
  * @author Mircea.Markus@jboss.com
  * @since 4.0
  */
-public abstract class AbstractCacheLoader<T extends CacheLoaderConfiguration> implements CacheLoader <T>{
+public abstract class AbstractCacheLoader implements CacheLoader {
 
    protected volatile StreamingMarshaller marshaller;
    protected volatile Cache<Object, Object> cache;
    protected TimeService timeService;
-   protected T configuration;
+   protected CacheLoaderConfiguration configuration;
 
    /**
     * {@inheritDoc} This implementation delegates to {@link CacheLoader#load(Object)}, to ensure that a response is
@@ -30,7 +30,7 @@ public abstract class AbstractCacheLoader<T extends CacheLoaderConfiguration> im
    }
 
    @Override
-   public void init(T config, Cache<?, ?> cache, StreamingMarshaller m) throws
+   public void init(CacheLoaderConfiguration config, Cache<?, ?> cache, StreamingMarshaller m) throws
          CacheLoaderException {
       this.marshaller = m;
       if (config == null) throw new IllegalStateException("Null config!!!");
@@ -42,7 +42,7 @@ public abstract class AbstractCacheLoader<T extends CacheLoaderConfiguration> im
     * {@inheritDoc}
     */
    @Override
-   public T getConfiguration() {
+   public CacheLoaderConfiguration getConfiguration() {
       return configuration;
    }
 }

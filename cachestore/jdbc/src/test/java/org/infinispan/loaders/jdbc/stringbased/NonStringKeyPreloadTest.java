@@ -14,13 +14,11 @@ import org.infinispan.commons.configuration.BuiltBy;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.eviction.EvictionStrategy;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.jdbc.AbstractJdbcCacheStoreConfig;
 import org.infinispan.loaders.jdbc.configuration.AbstractJdbcCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.jdbc.configuration.AbstractJdbcCacheStoreConfigurationChildBuilder;
 import org.infinispan.loaders.jdbc.configuration.ConnectionFactoryConfiguration;
 import org.infinispan.loaders.jdbc.configuration.ConnectionFactoryConfigurationBuilder;
 import org.infinispan.loaders.jdbc.configuration.JdbcStringBasedCacheStoreConfigurationBuilder;
-import org.infinispan.loaders.jdbc.configuration.LegacyConnectionFactoryAdaptor;
 import org.infinispan.loaders.jdbc.configuration.PooledConnectionFactoryConfiguration;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactory;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactoryConfig;
@@ -147,7 +145,7 @@ public class NonStringKeyPreloadTest extends AbstractInfinispanTest {
       static boolean started = false;
 
       @Override
-      public void start(ConnectionFactoryConfig config, ClassLoader classLoader) throws CacheLoaderException {
+      public void start(ConnectionFactoryConfiguration config, ClassLoader classLoader) throws CacheLoaderException {
          if (!started) {
             sharedFactory = new PooledConnectionFactory();
             sharedFactory.start(config, classLoader);
@@ -172,7 +170,7 @@ public class NonStringKeyPreloadTest extends AbstractInfinispanTest {
    }
 
    @BuiltBy(SharedConnectionFactoryConfigurationBuilder.class)
-   public static class SharedConnectionFactoryConfiguration implements ConnectionFactoryConfiguration, LegacyConnectionFactoryAdaptor {
+   public static class SharedConnectionFactoryConfiguration implements ConnectionFactoryConfiguration {
       private final String connectionUrl;
       private final String driverClass;
       private final String username;
@@ -204,15 +202,6 @@ public class NonStringKeyPreloadTest extends AbstractInfinispanTest {
       @Override
       public Class<? extends ConnectionFactory> connectionFactoryClass() {
          return SharedConnectionFactory.class;
-      }
-
-      @Override
-      public void adapt(AbstractJdbcCacheStoreConfig config) {
-         config.setConnectionFactoryClass(connectionFactoryClass().getName());
-         config.setConnectionUrl(connectionUrl);
-         config.setDriverClass(driverClass);
-         config.setUserName(username);
-         config.setPassword(password);
       }
    }
 

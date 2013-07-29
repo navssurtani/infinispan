@@ -898,5 +898,8 @@ public interface Log extends BasicLogger {
    @Message(value = "Directory %s does not exist and cannot be created!", id = 238)
    CacheConfigurationException directoryCannotBeCreated(String path);
 
+   @Message(value =  "Invalid cache loader configuration!!  Only ONE cache loader may have fetchPersistentState set " +
+         "to true.  Cache will not start!", id = 239)
+   CacheConfigurationException multipleCacheStoresWithFetchPersistentState();
 }
 

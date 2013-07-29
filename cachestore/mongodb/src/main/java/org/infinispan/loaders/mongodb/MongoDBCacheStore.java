@@ -3,6 +3,7 @@ package org.infinispan.loaders.mongodb;
 import com.mongodb.*;
 import net.jcip.annotations.ThreadSafe;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.AbstractCacheStore;
 import org.infinispan.loaders.CacheLoaderException;
@@ -25,7 +26,7 @@ import java.util.Set;
  * @author Guillaume Scheibel <guillaume.scheibel@gmail.com>
  */
 @ThreadSafe
-public class MongoDBCacheStore extends AbstractCacheStore<MongoDBCacheStoreConfiguration> {
+public class MongoDBCacheStore extends AbstractCacheStore {
 
    private static final Log log = LogFactory.getLog(MongoDBCacheStore.class, Log.class);
    private static final boolean trace = log.isTraceEnabled();
@@ -37,8 +38,17 @@ public class MongoDBCacheStore extends AbstractCacheStore<MongoDBCacheStoreConfi
    private static final String TIMESTAMP_FIELD = "timestamp";
    private static final String VALUE_FIELD = "value";
 
+   private MongoDBCacheStoreConfiguration configuration;
+
    @Override
-   public void init(MongoDBCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
+      if (configuration instanceof MongoDBCacheStoreConfiguration) {
+         this.configuration = (MongoDBCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               MongoDBCacheStoreConfiguration.class.getName());
+      }
       super.init(configuration, cache, m);
    }
 

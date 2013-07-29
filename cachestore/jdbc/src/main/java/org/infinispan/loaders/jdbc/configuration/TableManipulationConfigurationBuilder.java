@@ -17,7 +17,6 @@ public abstract class TableManipulationConfigurationBuilder<B extends AbstractJd
    private int fetchSize = TableManipulation.DEFAULT_FETCH_SIZE;
    private boolean createOnStart = true;
    private boolean dropOnExit = false;
-   private String tableNamePrefix;
    private String cacheName;
    private DatabaseType databaseType;
    private String idColumnName;
@@ -26,6 +25,9 @@ public abstract class TableManipulationConfigurationBuilder<B extends AbstractJd
    private String dataColumnType;
    private String timestampColumnName;
    private String timestampColumnType;
+
+   // Needs package access for validate() in JdbcMixedCacheStoreConfigurationBuilder
+   String tableNamePrefix;
 
    TableManipulationConfigurationBuilder(AbstractJdbcCacheStoreConfigurationBuilder<?, B> builder) {
       super(builder);

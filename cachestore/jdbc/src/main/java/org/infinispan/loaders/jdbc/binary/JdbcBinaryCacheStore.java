@@ -1,11 +1,10 @@
 package org.infinispan.loaders.jdbc.binary;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.commons.io.ByteBuffer;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.bucket.Bucket;
 import org.infinispan.loaders.bucket.BucketBasedCacheStore;
 import org.infinispan.loaders.jdbc.DataManipulationHelper;
@@ -43,26 +42,35 @@ import java.util.Set;
  * This class has the benefit of being able to store StoredEntries that do not have String keys, at the cost of coarser
  * grained access granularity, and inherently performance.
  * <p/>
- * All the DB related configurations are described in {@link org.infinispan.loaders.jdbc.binary.JdbcBinaryCacheStoreConfig}.
+ * All the DB related configurations are described in {@link org.infinispan.loaders.jdbc.binary
+ * .JdbcBinaryCacheStoreConfiguration}.
  *
  * @author Mircea.Markus@jboss.com
- * @see JdbcBinaryCacheStoreConfig
+ * @see JdbcBinaryCacheStoreConfiguration
  * @see org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore
  */
-public class JdbcBinaryCacheStore extends BucketBasedCacheStore <JdbcBinaryCacheStoreConfiguration>{
+public class JdbcBinaryCacheStore extends BucketBasedCacheStore {
 
    private static final Log log = LogFactory.getLog(JdbcBinaryCacheStore.class, Log.class);
 
    private final static byte BINARY_STREAM_DELIMITER = 100;
+
+   private JdbcBinaryCacheStoreConfiguration configuration;
 
    private ConnectionFactory connectionFactory;
    TableManipulation tableManipulation;
    private DataManipulationHelper dmHelper;
 
    @Override
-   public void init(JdbcBinaryCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       if (log.isTraceEnabled()) {
          log.tracef("Initializing JdbcBinaryCacheStore %s", configuration.getClass().getName());
+      }
+      if (configuration instanceof JdbcBinaryCacheStoreConfiguration) {
+         this.configuration = (JdbcBinaryCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               JdbcBinaryCacheStoreConfiguration.class.getName());
       }
       super.init(configuration, cache, m);
    }

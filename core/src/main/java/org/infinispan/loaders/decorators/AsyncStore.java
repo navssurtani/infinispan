@@ -3,9 +3,10 @@ package org.infinispan.loaders.decorators;
 import net.jcip.annotations.GuardedBy;
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.AsyncStoreConfiguration;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
+import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.container.entries.InternalCacheEntry;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheStore;
 import org.infinispan.loaders.modifications.Clear;
@@ -62,12 +63,11 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * @author Karsten Blees
  * @since 4.0
  */
-public class AsyncStore extends AbstractDelegatingStore <AsyncStoreConfiguration> {
+public class AsyncStore extends AbstractDelegatingStore {
    private static final Log log = LogFactory.getLog(AsyncStore.class);
    private static final boolean trace = log.isTraceEnabled();
    private static final AtomicInteger threadId = new AtomicInteger(0);
 
-   private final AsyncStoreConfig asyncStoreConfig;
    private final TransactionFactory txFactory;
    private Map<GlobalTransaction, List<? extends Modification>> transactions;
 
@@ -82,22 +82,30 @@ public class AsyncStore extends AbstractDelegatingStore <AsyncStoreConfiguration
    @GuardedBy("stateLock")
    private volatile State state;
 
-   public AsyncStore(CacheStore delegate, AsyncStoreConfig asyncStoreConfig) {
+   protected AsyncStoreConfiguration configuration;
+
+   public AsyncStore(CacheStore delegate) {
       super(delegate);
-      this.asyncStoreConfig = asyncStoreConfig;
       txFactory = new TransactionFactory();
       txFactory.init(false, false, false, false);
    }
 
    @Override
-   public void init(AsyncStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
          CacheLoaderException {
-
       super.init(configuration, cache, m);
+
+      if (configuration instanceof CacheStoreConfiguration) {
+         this.configuration = ((CacheStoreConfiguration) configuration).async();
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               CacheStoreConfiguration.class.getName());
+      }
+
       Configuration cacheCfg = cache != null ? cache.getCacheConfiguration() : null;
       concurrencyLevel = cacheCfg != null ? cacheCfg.locking().concurrencyLevel() : 16;
       long cacheStopTimeout = cacheCfg != null ? cacheCfg.transaction().cacheStopTimeout() : 30000;
-      Long configuredAsyncStopTimeout = asyncStoreConfig.getShutdownTimeout();
+      Long configuredAsyncStopTimeout = this.configuration.shutdownTimeout();
       cacheName = cache != null ? cache.getName() : null;
 
       // Async store shutdown timeout cannot be bigger than
@@ -284,11 +292,11 @@ public class AsyncStore extends AbstractDelegatingStore <AsyncStoreConfiguration
    public void start() throws CacheLoaderException {
       log.debugf("Async cache loader starting %s", this);
       state = newState(false, null);
-      stateLock = new BufferLock(asyncStoreConfig.getModificationQueueSize());
+      stateLock = new BufferLock(configuration.modificationQueueSize());
 
       super.start();
 
-      int poolSize = asyncStoreConfig.getThreadPoolSize();
+      int poolSize = configuration.threadPoolSize();
       executor = new ThreadPoolExecutor(0, poolSize, 120L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
             new ThreadFactory() {
                @Override
@@ -648,7 +656,7 @@ public class AsyncStore extends AbstractDelegatingStore <AsyncStoreConfiguration
                   }
 
                   // distribute modifications evenly across worker threads
-                  int threads = Math.min(mods.size(), asyncStoreConfig.getThreadPoolSize());
+                  int threads = Math.min(mods.size(), configuration.threadPoolSize());
                   s.workerThreads = new CountDownLatch(threads);
                   if (threads > 0) {
                      // schedule background threads

@@ -20,6 +20,7 @@ import java.util.concurrent.Future;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.bucket.Bucket;
@@ -60,7 +61,7 @@ import com.google.common.collect.Maps;
  * @author Adrian Cole
  * @since 4.0
  */
-public class CloudCacheStore extends BucketBasedCacheStore<CloudCacheStoreConfiguration> {
+public class CloudCacheStore extends BucketBasedCacheStore {
    static final Log log = LogFactory.getLog(CloudCacheStore.class, Log.class);
    final ThreadLocal<List<Future<?>>> asyncCommandFutures = new ThreadLocal<List<Future<?>>>();
    String containerName;
@@ -71,6 +72,8 @@ public class CloudCacheStore extends BucketBasedCacheStore<CloudCacheStoreConfig
    boolean constructInternalBlobstores = true;
    protected static final String EARLIEST_EXPIRY_TIME = "metadata_eet";
    private MessageDigest md5;
+
+   private CloudCacheStoreConfiguration configuration;
 
    public CloudCacheStore() throws CacheLoaderException {
       try {
@@ -91,9 +94,15 @@ public class CloudCacheStore extends BucketBasedCacheStore<CloudCacheStoreConfig
    }
 
    @Override
-   public void init(CloudCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m)
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m)
          throws CacheLoaderException {
-      init(configuration, cache, m, null, null, null, true);
+      if (configuration instanceof CloudCacheStoreConfiguration) {
+         this.configuration = (CloudCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               CloudCacheStoreConfiguration.class.getName());
+      }
+      init(this.configuration, cache, m, null, null, null, true);
    }
 
    public void init(CloudCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m, BlobStoreContext ctx,

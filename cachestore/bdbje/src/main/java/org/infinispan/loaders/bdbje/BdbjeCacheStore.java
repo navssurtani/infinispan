@@ -15,6 +15,7 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.util.ExceptionUnwrapper;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.AbstractCacheStore;
 import org.infinispan.loaders.CacheLoaderException;
@@ -47,9 +48,11 @@ import java.util.Set;
  * override any parameters to the internal SleepyCat JE {@link EnvironmentConfig}.</p>
  * <p/>
  * All data access is transactional.  Any attempted reads to locked records will block.  The maximum duration of this is
- * set in nanoseconds via the parameter {@link org.infinispan.loaders.bdbje.BdbjeCacheStoreConfig#getLockAcquistionTimeout()}.
+ * set in nanoseconds via the parameter {@link org.infinispan.loaders.bdbje.configuration
+ * .BdbjeCacheStoreConfiguration#lockAcquisitionTimeout()}.
  * Calls to {@link org.infinispan.loaders.CacheStore#prepare(java.util.List, org.infinispan.transaction.xa.GlobalTransaction,
- * boolean)}  will attempt to resolve deadlocks, retrying up to {@link org.infinispan.loaders.bdbje.BdbjeCacheStoreConfig#getMaxTxRetries()}
+ * boolean)}  will attempt to resolve deadlocks, retrying up to {@link org.infinispan.loaders.bdbje
+ * .configuration.BdbjeCacheStoreConfiguration#maxTxRetries()}
  * attempts.
  * <p/>
  * Unlike the C version of SleepyCat, JE does not support MVCC or READ_COMMITTED isolation.  In other words, readers
@@ -61,8 +64,7 @@ import java.util.Set;
  * @author Manik Surtani
  * @since 4.0
  */
-public class BdbjeCacheStore extends AbstractCacheStore
-      <BdbjeCacheStoreConfiguration> {
+public class BdbjeCacheStore extends AbstractCacheStore {
 
    private static final Log log =
          LogFactory.getLog(BdbjeCacheStore.class, Log.class);
@@ -81,18 +83,28 @@ public class BdbjeCacheStore extends AbstractCacheStore
    private CurrentTransaction currentTransaction;
    private BdbjeResourceFactory factory;
 
+   private BdbjeCacheStoreConfiguration configuration;
    /**
-    * {@inheritDoc} This implementation expects config to be an instance of {@link BdbjeCacheStoreConfig} <p /> note
+    * {@inheritDoc} This implementation expects config to be an instance of {@link BdbjeCacheStoreConfiguration} <p /> note
     * that the <code>m</code> is not currently used as SleepyCat has its own efficient solution.
     *
     * @see {@link BdbjeCacheStoreConfiguration}
+    * @throws {@link CacheLoaderException} if an incompatible configuration bean is passed.
     */
    @Override
-   public void init(BdbjeCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
       if (trace) log.trace("Initializing BdbjeCacheStore");
       printLicense();
+
+      if (configuration instanceof BdbjeCacheStoreConfiguration) {
+         this.configuration = (BdbjeCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               BdbjeCacheStoreConfiguration.class.getName());
+      }
+
       super.init(configuration, cache, m);
-      this.factory = new BdbjeResourceFactory(configuration);
+      this.factory = new BdbjeResourceFactory(this.configuration);
    }
 
    /**

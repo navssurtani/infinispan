@@ -8,6 +8,8 @@ import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.context.InvocationContext;
 import org.infinispan.interceptors.InterceptorChain;
 import org.infinispan.interceptors.base.CommandInterceptor;
+import org.infinispan.loaders.decorators.AsyncStore;
+import org.infinispan.loaders.dummy.DummyInMemoryCacheStore;
 import org.infinispan.loaders.dummy.DummyInMemoryCacheStoreConfigurationBuilder;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.test.SingleCacheManagerTest;
@@ -59,7 +61,6 @@ public class PreloadWithAsyncStoreTest extends SingleCacheManagerTest {
                .recovery().enabled(cacheType.useRecovery);
          builder.customInterceptors().addInterceptor().index(0).interceptor(new ExceptionTrackerInterceptor());
          cm.defineConfiguration(cacheType.cacheName, builder.build());
-
       }
 
       return cm;

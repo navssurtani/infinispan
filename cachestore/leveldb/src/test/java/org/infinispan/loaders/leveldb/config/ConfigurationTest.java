@@ -12,7 +12,7 @@ import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfiguration;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.loaders.leveldb.LevelDBCacheStore;
-import org.infinispan.loaders.leveldb.LevelDBCacheStoreConfig.ImplementationType;
+import org.infinispan.loaders.leveldb.configuration.ImplementationType;
 import org.infinispan.loaders.leveldb.configuration.LevelDBCacheStoreConfiguration;
 import org.infinispan.loaders.leveldb.configuration.LevelDBCacheStoreConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;

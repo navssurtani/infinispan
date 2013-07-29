@@ -35,6 +35,7 @@ import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.SuperColumn;
 import org.infinispan.Cache;
 import org.infinispan.commons.CacheConfigurationException;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
 import org.infinispan.loaders.AbstractCacheStore;
@@ -53,7 +54,7 @@ import org.infinispan.util.logging.LogFactory;
  *
  * @author Tristan Tarrant
  */
-public class CassandraCacheStore  extends AbstractCacheStore <CassandraCacheStoreConfiguration> {
+public class CassandraCacheStore  extends AbstractCacheStore {
 
    private static final String ENTRY_KEY_PREFIX = "entry_";
    private static final String ENTRY_COLUMN_NAME = "entry";
@@ -77,9 +78,17 @@ public class CassandraCacheStore  extends AbstractCacheStore <CassandraCacheStor
 
    static private Charset UTF8Charset = Charset.forName("UTF-8");
 
+   private CassandraCacheStoreConfiguration configuration;
    @Override
-   public void init(CassandraCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m)
-            throws CacheLoaderException {
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache,
+                    StreamingMarshaller m) throws CacheLoaderException {
+      if (configuration instanceof CassandraCacheStoreConfiguration) {
+         this.configuration = (CassandraCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               CassandraCacheStoreConfiguration.class.getName());
+      }
+
       super.init(configuration, cache, m);
       this.cacheName = cache.getName();
    }

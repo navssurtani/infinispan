@@ -13,6 +13,9 @@ import com.sleepycat.util.RuntimeExceptionWrapper;
 import org.infinispan.Cache;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.AbstractCacheStoreTest;
+import org.infinispan.loaders.bdbje.configuration.BdbjeCacheStoreConfiguration;
+import org.infinispan.loaders.bdbje.configuration.BdbjeCacheStoreConfigurationBuilder;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.TestInternalCacheEntryFactory;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.modifications.Store;
@@ -30,7 +33,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.lang.ref.WeakReference;
 import java.util.Collections;
-import java.util.Properties;
 
 import static org.mockito.Mockito.*;
 
@@ -41,7 +43,7 @@ import static org.mockito.Mockito.*;
 @Test(groups = "unit", testName = "loaders.bdbje.BdbjeCacheStoreTest")
 public class BdbjeCacheStoreTest {
    private BdbjeCacheStore cs;
-   private BdbjeCacheStoreConfig cfg;
+   private BdbjeCacheStoreConfiguration storeConfiguration;
    private BdbjeResourceFactory factory;
    private Cache cache;
    private Environment env;
@@ -81,11 +83,11 @@ public class BdbjeCacheStoreTest {
 
       @Override
       public Database createDatabase(Environment env, String name) throws DatabaseException {
-         if (name.equals(cfg.getCacheDbName()))
+         if (name.equals(storeConfiguration.cacheDbNamePrefix()))
             return cacheDb;
-         else if (name.equals(cfg.getCatalogDbName()))
+         else if (name.equals(storeConfiguration.catalogDbName()))
             return catalogDb;
-         else if (name.equals(cfg.getExpiryDbName()))
+         else if (name.equals(storeConfiguration.expiryDbPrefix()))
             return expiryDb;
          else throw new IllegalStateException("Unknown name:" + name);
       }
@@ -100,15 +102,21 @@ public class BdbjeCacheStoreTest {
          return expiryMap;
       }
 
-      public MockBdbjeResourceFactory(BdbjeCacheStoreConfig config) {
+      public MockBdbjeResourceFactory(BdbjeCacheStoreConfiguration config) {
          super(config);
       }
    }
 
    @BeforeMethod
    public void setUp() throws Exception {
-      cfg = new BdbjeCacheStoreConfig();
-      factory = new MockBdbjeResourceFactory(cfg);
+      BdbjeCacheStoreConfigurationBuilder storeBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(BdbjeCacheStoreConfigurationBuilder.class)
+               .purgeSynchronously(true);
+
+      storeConfiguration = storeBuilder.create();
+      factory = new MockBdbjeResourceFactory(storeConfiguration);
       cache = AbstractCacheStoreTest.mockCache(getClass().getName());
       cs = new BdbjeCacheStore();
       env = mock(Environment.class);
@@ -139,24 +147,20 @@ public class BdbjeCacheStoreTest {
       env = null;
       factory = null;
       cache = null;
-      cfg = null;
+      storeConfiguration = null;
       cs = null;
       gtf = null;
    }
 
    void start() throws DatabaseException, CacheLoaderException {
-      cs.init(cfg, factory, cache, new TestObjectStreamMarshaller());
+      cs.init(storeConfiguration, cache, new TestObjectStreamMarshaller());
       when(cache.getName()).thenReturn("cache");
       when(cache.getCacheConfiguration()).thenReturn(null);
    }
 
-   public void testGetConfigurationClass() throws Exception {
-      assert cs.getConfiguration().equals(BdbjeCacheStoreConfig.class);
-   }
-
    public void testInitNoMock() throws Exception {
-      cs.init(cfg, cache, null);
-      assert cfg.equals(ReflectionUtil.getValue(cs, "cfg"));
+      cs.init(storeConfiguration, cache, null);
+      assert storeConfiguration.equals(ReflectionUtil.getValue(cs, "storeConfiguration"));
       assert cache.equals(ReflectionUtil.getValue(cs, "cache"));
       assert ReflectionUtil.getValue(cs, "factory") instanceof BdbjeResourceFactory;
    }
@@ -186,7 +190,7 @@ public class BdbjeCacheStoreTest {
 
    @Test(expectedExceptions = CacheLoaderException.class)
    public void testThrowsCorrectExceptionOnStartForDatabaseException() throws Exception {
-      factory = new MockBdbjeResourceFactory(cfg) {
+      factory = new MockBdbjeResourceFactory(storeConfiguration) {
          @Override
          public StoredClassCatalog createStoredClassCatalog(Database catalogDb) throws DatabaseException {
             throw new DatabaseException("Dummy"){};

@@ -2,7 +2,6 @@ package org.infinispan.loaders.jdbm.configuration;
 
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.infinispan.loaders.jdbm.JdbmCacheStoreConfig;
 import org.testng.annotations.Test;
 
 @Test(groups = "unit", testName = "loaders.jdbm.configuration.ConfigurationTest")
@@ -26,11 +25,5 @@ public class ConfigurationTest {
       assert store2.expiryQueueSize() == 100;
       assert store2.fetchPersistentState();
       assert store2.async().enabled();
-
-      JdbmCacheStoreConfig legacy = store.adapt();
-      assert legacy.getLocation().equals("/tmp/jdbm");
-      assert legacy.getExpiryQueueSize() == 100;
-      assert legacy.isFetchPersistentState();
-      assert legacy.getAsyncStoreConfig().isEnabled();
    }
 }

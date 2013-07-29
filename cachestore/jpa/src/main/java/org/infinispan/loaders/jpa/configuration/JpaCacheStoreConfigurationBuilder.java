@@ -2,7 +2,6 @@ package org.infinispan.loaders.jpa.configuration;
 
 import org.infinispan.configuration.cache.AbstractLockSupportStoreConfigurationBuilder;
 import org.infinispan.configuration.cache.LoadersConfigurationBuilder;
-import org.infinispan.loaders.jpa.JpaCacheStoreConfig;
 import org.infinispan.commons.configuration.Builder;
 import org.infinispan.commons.util.TypedProperties;
 
@@ -17,7 +16,7 @@ public class JpaCacheStoreConfigurationBuilder
 
 	private String persistenceUnitName;
 	private Class<?> entityClass;
-	private long batchSize = JpaCacheStoreConfig.DEFAULT_BATCH_SIZE;
+	private long batchSize = 100L;
 
 	public JpaCacheStoreConfigurationBuilder(LoadersConfigurationBuilder builder) {
 		super(builder);

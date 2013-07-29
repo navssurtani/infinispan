@@ -1,5 +1,7 @@
 package org.infinispan.loaders.bdbje;
 
+import org.infinispan.loaders.bdbje.configuration.BdbjeCacheStoreConfigurationBuilder;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.TestInternalCacheEntryFactory;
 import org.infinispan.loaders.BaseCacheStoreTest;
 import org.infinispan.loaders.CacheLoaderException;
@@ -49,10 +51,13 @@ public class BdbjeCacheStoreIntegrationTest extends BaseCacheStoreTest {
    protected CacheStore createCacheStore() throws CacheLoaderException {
 //      clearTempDir();
       CacheStore cs = new BdbjeCacheStore();
-      BdbjeCacheStoreConfig cfg = new BdbjeCacheStoreConfig();
-      cfg.setLocation(tmpDirectory);
-      cfg.setPurgeSynchronously(true);
-      cs.init(cfg, getCache(), getMarshaller());
+      BdbjeCacheStoreConfigurationBuilder storeConfigurationBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(BdbjeCacheStoreConfigurationBuilder.class)
+               .purgeSynchronously(true)
+               .location(this.tmpDirectory);
+      cs.init(storeConfigurationBuilder.create(), getCache(), getMarshaller());
       cs.start();
       return cs;
    }

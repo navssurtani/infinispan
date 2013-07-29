@@ -161,7 +161,7 @@ public class UnnnecessaryLoadingTest extends SingleCacheManagerTest {
       countingCS.numContains = 0;
    }
 
-   public static class CountingCacheStore extends AbstractCacheStore <CountingCacheStoreConfiguration> {
+   public static class CountingCacheStore extends AbstractCacheStore  {
       public int numLoads, numContains;
 
       @Override

@@ -12,7 +12,6 @@ import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheLoaderManager;
 import org.infinispan.loaders.CacheLoaderManagerImpl;
 import org.infinispan.loaders.CacheStore;
-import org.infinispan.loaders.CacheStoreConfig;
 import org.infinispan.loaders.dummy.DummyInMemoryCacheStore;
 import org.infinispan.loaders.dummy.DummyInMemoryCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.modifications.Modification;
@@ -224,8 +223,8 @@ public class AsyncStoreFunctionalTest {
       private final CountDownLatch lockedWaitLatch;
 
       public MockAsyncStore(CountDownLatch modApplyLatch, CountDownLatch lockedWaitLatch,
-            CacheStore delegate, AsyncStoreConfig asyncStoreConfig) {
-         super(delegate, asyncStoreConfig);
+            CacheStore delegate) {
+         super(delegate);
          this.modApplyLatch = modApplyLatch;
          this.lockedWaitLatch = lockedWaitLatch;
       }
@@ -293,12 +292,11 @@ public class AsyncStoreFunctionalTest {
 
    public static class CustomCacheLoaderManager extends CacheLoaderManagerImpl {
 
-      @Override
-      protected AsyncStore createAsyncStore(CacheStore tmpStore, CacheStoreConfig cfg2) {
+      protected AsyncStore createAsyncStore(CacheStore tmpStore) {
          CountDownLatch modApplyLatch = new CountDownLatch(1);
          CountDownLatch lockedWaitLatch = new CountDownLatch(1);
          return new MockAsyncStore(modApplyLatch, lockedWaitLatch,
-               tmpStore, cfg2.getAsyncStoreConfig());
+               tmpStore);
       }
 
    }

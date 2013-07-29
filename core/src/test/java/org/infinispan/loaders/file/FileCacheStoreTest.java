@@ -1,6 +1,8 @@
 package org.infinispan.loaders.file;
 
+import org.infinispan.configuration.cache.FileCacheStoreConfigurationBuilder;
 import org.infinispan.container.entries.InternalCacheEntry;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.TestInternalCacheEntryFactory;
 import org.infinispan.io.UnclosableObjectInputStream;
 import org.infinispan.io.UnclosableObjectOutputStream;
@@ -45,18 +47,20 @@ public class FileCacheStoreTest extends BaseCacheStoreTest {
    protected CacheStore createCacheStore() throws CacheLoaderException {
       clearTempDir();
       fcs = new FileCacheStore();
-      FileCacheStoreConfig cfg = new FileCacheStoreConfig()
-         .fetchPersistentState(true)
-         .fsyncMode(getFsyncMode())
-         .location(tmpDirectory)
-         .purgeSynchronously(true); // for more accurate unit testing
-      fcs.init(cfg, getCache(), getMarshaller());
+
+      FileCacheStoreConfigurationBuilder fileBuilder = TestCacheManagerFactory.getDefaultCacheConfiguration(false)
+            .loaders().addFileCacheStore();
+      fileBuilder.fetchPersistentState(true)
+            .fsyncMode(getFsyncMode())
+            .location(this.tmpDirectory)
+            .purgeSynchronously(true);
+      fcs.init(fileBuilder.create(), getCache(), getMarshaller());
       fcs.start();
       return fcs;
    }
 
-   protected FileCacheStoreConfig.FsyncMode getFsyncMode() {
-      return FileCacheStoreConfig.FsyncMode.DEFAULT;
+   protected FileCacheStoreConfigurationBuilder.FsyncMode getFsyncMode() {
+      return FileCacheStoreConfigurationBuilder.FsyncMode.DEFAULT;
    }
 
    @Override

@@ -101,18 +101,10 @@ public class UnitTestDatabaseManager {
       }
    }
 
-   public static ConnectionFactoryConfig getBrokenConnectionFactoryConfig() {
-      ConnectionFactoryConfig brokenConfig = new ConnectionFactoryConfig();
-      brokenConfig.setDriverClass(NON_EXISTENT_DRIVER);
-      return brokenConfig;
-   }
-
-   public static String getDatabaseName(Properties prop) {
-      StringTokenizer tokenizer = new StringTokenizer(prop.getProperty("cache.jdbc.url"), ":");
-      tokenizer.nextToken();
-      tokenizer.nextToken();
-      tokenizer.nextToken();
-      return tokenizer.nextToken();
+   public static ConnectionFactoryConfigurationBuilder<?> configureBrokenConnectionFactory
+         (AbstractJdbcCacheStoreConfigurationBuilder<?, ?> storeBuilder) {
+      return storeBuilder.connectionPool()
+                  .driverClass(NON_EXISTENT_DRIVER);
    }
 
    private static ConnectionFactoryConfig returnBasedOnDifferentInstance() {
@@ -140,12 +132,6 @@ public class UnitTestDatabaseManager {
       return null;
    }
 
-   @Deprecated
-   public static TableManipulation buildStringTableManipulation() {
-      TableManipulation tableManipulation = new TableManipulation("ID_COLUMN", "VARCHAR(255)", "ISPN_JDBC", "DATA_COLUMN", "BLOB", "TIMESTAMP_COLUMN", "BIGINT");
-      tableManipulation.databaseType = dt;
-      return tableManipulation;
-   }
 
    public static void buildTableManipulation(TableManipulationConfigurationBuilder<?, ?> table, boolean binary) {
       table
@@ -157,13 +143,6 @@ public class UnitTestDatabaseManager {
          .dataColumnType("BLOB")
          .timestampColumnName("TIMESTAMP_COLUMN")
          .timestampColumnType("BIGINT");
-   }
-
-   @Deprecated
-   public static TableManipulation buildBinaryTableManipulation() {
-      TableManipulation tableManipulation = new TableManipulation("ID_COLUMN", "INT", "ISPN_JDBC", "DATA_COLUMN", "BLOB", "TIMESTAMP_COLUMN", "BIGINT");
-      tableManipulation.databaseType = dt;
-      return tableManipulation;
    }
 
    /**

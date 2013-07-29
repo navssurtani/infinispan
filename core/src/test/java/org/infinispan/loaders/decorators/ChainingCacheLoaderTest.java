@@ -1,15 +1,16 @@
 package org.infinispan.loaders.decorators;
 
 import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
 import org.infinispan.container.entries.InternalCacheEntry;
+import org.infinispan.loaders.dummy.DummyInMemoryCacheStoreConfiguration;
+import org.infinispan.loaders.dummy.DummyInMemoryCacheStoreConfigurationBuilder;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.TestInternalCacheEntryFactory;
 import org.infinispan.io.UnclosableObjectInputStream;
 import org.infinispan.io.UnclosableObjectOutputStream;
 import org.infinispan.loaders.BaseCacheStoreTest;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheStore;
-import org.infinispan.loaders.CacheStoreConfig;
 import org.infinispan.loaders.dummy.DummyInMemoryCacheStore;
 import org.infinispan.loaders.modifications.Clear;
 import org.infinispan.loaders.modifications.Modification;
@@ -38,27 +39,36 @@ public class ChainingCacheLoaderTest extends BaseCacheStoreTest {
    @Override
    protected CacheStore createCacheStore() throws CacheLoaderException {
       ChainingCacheStore store = new ChainingCacheStore();
-      CacheStoreConfig cfg = new DummyInMemoryCacheStore.Cfg()
-         .storeName("ChainingCacheLoaderTest_instance1")
-         .purgeOnStartup(false)
-         .fetchPersistentState(false);
+      DummyInMemoryCacheStoreConfiguration dummyConfiguration1 = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(DummyInMemoryCacheStoreConfigurationBuilder.class)
+                  .storeName("ChainingCacheLoaderTest_instance1")
+                  .purgeOnStartup(false)
+                  .fetchPersistentState(false)
+                  .create();
       store1 = new DummyInMemoryCacheStore();
-      store1.init(cfg, getCache(), new TestObjectStreamMarshaller());
+      store1.init(dummyConfiguration1, getCache(), new TestObjectStreamMarshaller());
 
       ConfigurationBuilder builder = new ConfigurationBuilder();
-      LegacyConfigurationAdaptor.adapt(Thread.currentThread().getContextClassLoader(), builder, cfg);
       store.addCacheLoader(store1, builder.build().loaders().cacheLoaders().get(0));
 
       store2 = new DummyInMemoryCacheStore();
+
       // set store2 up for streaming
-      cfg = new DummyInMemoryCacheStore.Cfg()
-         .storeName("ChainingCacheLoaderTest_instance2")
-         .purgeOnStartup(false)
-         .fetchPersistentState(true);
-      store2.init(cfg, getCache(), new TestObjectStreamMarshaller());
+
+      DummyInMemoryCacheStoreConfiguration dummyConfiguration2 = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(DummyInMemoryCacheStoreConfigurationBuilder.class)
+                  .storeName("ChainingCacheLoaderTest_instance2")
+                  .purgeOnStartup(false)
+                  .fetchPersistentState(true)
+                  .create();
+
+      store2.init(dummyConfiguration2, getCache(), new TestObjectStreamMarshaller());
 
       builder = new ConfigurationBuilder();
-      LegacyConfigurationAdaptor.adapt(Thread.currentThread().getContextClassLoader(), builder, cfg);
       store.addCacheLoader(store2, builder.build().loaders().cacheLoaders().get(0));
 
       stores = new DummyInMemoryCacheStore[]{store1, store2};

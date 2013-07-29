@@ -2,12 +2,10 @@ package org.infinispan.loaders.decorators;
 
 import net.jcip.annotations.GuardedBy;
 import org.infinispan.Cache;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
 import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.CacheLoader;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheStore;
 import org.infinispan.loaders.modifications.Modification;
@@ -43,7 +41,7 @@ import static org.infinispan.loaders.decorators.AbstractDelegatingStore.undelega
  * @author Manik Surtani
  * @since 4.0
  */
-public class ChainingCacheStore implements CacheStore <CacheStoreConfiguration> {
+public class ChainingCacheStore implements CacheStore {
    private static final Log log = LogFactory.getLog(ChainingCacheStore.class);
    private final ReadWriteLock loadersAndStoresMutex = new ReentrantReadWriteLock();
    @GuardedBy("loadersAndStoresMutex")
@@ -172,8 +170,15 @@ public class ChainingCacheStore implements CacheStore <CacheStoreConfiguration> 
    }
 
    @Override
-   public void init(CacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
          CacheLoaderException {
+
+      if (configuration instanceof CacheStoreConfiguration) {
+         this.configuration = (CacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               CacheStoreConfiguration.class.getName());
+      }
       loadersAndStoresMutex.readLock().lock();
       try {
          for (Map.Entry<CacheLoader, CacheLoaderConfiguration> e : loaders.entrySet()) {
@@ -182,7 +187,6 @@ public class ChainingCacheStore implements CacheStore <CacheStoreConfiguration> 
       } finally {
          loadersAndStoresMutex.readLock().unlock();
       }
-      this.configuration = configuration;
    }
 
    @Override

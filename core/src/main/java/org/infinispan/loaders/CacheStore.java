@@ -1,6 +1,5 @@
 package org.infinispan.loaders;
 
-import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.modifications.Modification;
 import org.infinispan.transaction.xa.GlobalTransaction;
@@ -16,7 +15,7 @@ import java.util.Set;
  * @author Manik Surtani
  * @since 4.0
  */
-public interface CacheStore<T> extends CacheLoader <T>{
+public interface CacheStore extends CacheLoader{
 
    /**
     * Stores an entry

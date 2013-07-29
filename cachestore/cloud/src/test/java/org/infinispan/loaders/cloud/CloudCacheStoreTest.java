@@ -1,7 +1,8 @@
 package org.infinispan.loaders.cloud;
 
-import org.infinispan.CacheImpl;
 import org.infinispan.container.entries.InternalCacheEntry;
+import org.infinispan.loaders.cloud.configuration.CloudCacheStoreConfigurationBuilder;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.TestInternalCacheEntryFactory;
 import org.infinispan.io.UnclosableObjectInputStream;
 import org.infinispan.io.UnclosableObjectOutputStream;
@@ -34,19 +35,19 @@ public class CloudCacheStoreTest extends BaseCacheStoreTest {
 
    private CacheStore buildCloudCacheStoreWithStubCloudService(String bucketName) throws CacheLoaderException {
       CloudCacheStore cs = new CloudCacheStore();
-      CloudCacheStoreConfig cfg = new CloudCacheStoreConfig();
-      cfg.setPurgeSynchronously(true);
-      cfg.setBucketPrefix(bucketName);
-      cfg.setCloudService("transient");
-      cfg.setIdentity("unit-test-stub");
-      cfg.setPassword("unit-test-stub");
-      cfg.setProxyHost("unit-test-stub");
-      cfg.setProxyPort("unit-test-stub");
 
-      // TODO remove compress = false once ISPN-409 is closed.
-      cfg.setCompress(false);
-      cfg.setPurgeSynchronously(true); // for more accurate unit testing
-      cs.init(cfg, getCache(), getMarshaller());
+      CloudCacheStoreConfigurationBuilder storeConfigurationBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(CloudCacheStoreConfigurationBuilder.class)
+                  .purgeSynchronously(true)
+                  .bucketPrefix(bucketName)
+                  .cloudService("transient")
+                  .identity("unit-test-stub")
+                  .password("unit-test-stub")
+                  .proxyHost("unit-test-stub");
+
+      cs.init(storeConfigurationBuilder.create(), getCache(), getMarshaller());
       return cs;
    }
 

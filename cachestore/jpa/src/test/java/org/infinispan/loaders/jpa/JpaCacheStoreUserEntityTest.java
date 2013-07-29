@@ -2,9 +2,13 @@ package org.infinispan.loaders.jpa;
 
 import org.hibernate.ejb.HibernateEntityManagerFactory;
 import org.infinispan.loaders.CacheStore;
+import org.infinispan.loaders.jpa.configuration.JpaCacheStoreConfiguration;
+import org.infinispan.loaders.jpa.configuration.JpaCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.jpa.entity.User;
 import org.infinispan.manager.CacheContainer;
 import org.infinispan.test.TestingUtil;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -17,14 +21,17 @@ public class JpaCacheStoreUserEntityTest extends BaseJpaCacheStoreTest {
 
 	@Override
 	protected CacheStore createCacheStore() throws Exception {
-		JpaCacheStoreConfig config = new JpaCacheStoreConfig();
+      JpaCacheStoreConfigurationBuilder storeBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(JpaCacheStoreConfigurationBuilder.class)
+               .purgeSynchronously(true)
+               .persistenceUnitName("org.infinispan.loaders.jpa")
+               .entityClass(User.class);
 
-		config.setPersistenceUnitName("org.infinispan.loaders.jpa");
-		config.setEntityClass(User.class);
-		config.setPurgeSynchronously(true);
 
 		JpaCacheStore store = new JpaCacheStore();
-		store.init(config, cm.getCache(), getMarshaller());
+		store.init(storeBuilder.create(), cm.getCache(), getMarshaller());
 		store.start();
 
 		assert store.getEntityManagerFactory() != null;
@@ -36,7 +43,7 @@ public class JpaCacheStoreUserEntityTest extends BaseJpaCacheStoreTest {
 	public void testSimple() throws Exception {
 		CacheContainer cm = null;
 		try {
-			assert cs.getCacheStoreConfig() instanceof JpaCacheStoreConfig;
+			Assert.assertTrue(cs.getConfiguration() instanceof JpaCacheStoreConfiguration);
 		} finally {
 			TestingUtil.killCacheManagers(cm);
 		}

@@ -2,6 +2,7 @@ package org.infinispan.loaders;
 
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.CacheLoaderConfiguration;
+import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.loaders.modifications.Modification;
 import org.infinispan.loaders.modifications.Remove;
 import org.infinispan.loaders.modifications.Store;
@@ -34,21 +35,26 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Mircea.Markus@jboss.com
  * @since 4.0
  */
-public abstract class AbstractCacheStore <T extends CacheLoaderConfiguration> extends AbstractCacheLoader <T>
-      implements CacheStore<T> {
+public abstract class AbstractCacheStore extends AbstractCacheLoader
+      implements CacheStore {
 
    private static final Log log = LogFactory.getLog(AbstractCacheStore.class);
 
    private Map<GlobalTransaction, List<? extends Modification>> transactions;
-   private AbstractCacheStoreConfig config;
    protected ExecutorService purgerService;
    private static final AtomicInteger THREAD_COUNTER = new AtomicInteger(0);
    protected boolean multiThreadedPurge = false;
+   protected CacheStoreConfiguration configuration;
 
    @Override
-   public void init(T config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException{
+   public void init(CacheLoaderConfiguration config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException{
+      if (config instanceof CacheStoreConfiguration) {
+         this.configuration = (CacheStoreConfiguration) config;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               CacheStoreConfiguration.class.getName());
+      }
       super.init(config, cache, m);
-      this.config = (AbstractCacheStoreConfig) config;
    }
 
    protected final int getConcurrencyLevel() {
@@ -57,13 +63,15 @@ public abstract class AbstractCacheStore <T extends CacheLoaderConfiguration> ex
 
    @Override
    public void start() throws CacheLoaderException {
-      if (config == null) throw new IllegalStateException("Make sure you call super.init() from CacheStore extension");
-      if (config.isPurgeSynchronously()) {
+      if (configuration == null) throw new IllegalStateException("Make sure you call super.init() from CacheStore " +
+            "extension");
+      if (configuration.purgeSynchronously()) {
          purgerService = new WithinThreadExecutor();
       } else {
-         multiThreadedPurge = supportsMultiThreadedPurge() && config.getPurgerThreads() > 1;
+         multiThreadedPurge = supportsMultiThreadedPurge() && configuration.purgerThreads() > 1;
          final String loaderName = getClass().getSimpleName();
-         purgerService = Executors.newFixedThreadPool(supportsMultiThreadedPurge() ? config.getPurgerThreads() : 1, new ThreadFactory() {
+         purgerService = Executors.newFixedThreadPool(supportsMultiThreadedPurge() ? configuration.purgerThreads() : 1,
+               new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
                // Thread name: <cache>-<CacheStore>-<purger>-ID
@@ -103,7 +111,7 @@ public abstract class AbstractCacheStore <T extends CacheLoaderConfiguration> ex
          }
       });
 
-      if (config.isPurgeSynchronously()) {
+      if (configuration.purgeSynchronously()) {
          try {
             future.get(60, TimeUnit.SECONDS);
          } catch (InterruptedException e) {
@@ -118,6 +126,14 @@ public abstract class AbstractCacheStore <T extends CacheLoaderConfiguration> ex
          }
       }
 
+   }
+
+   @Override
+   /**
+    * {@inheritDoc}
+    */
+   public CacheLoaderConfiguration getConfiguration() {
+      return this.configuration;
    }
 
    protected abstract void purgeInternal() throws CacheLoaderException;
@@ -167,11 +183,6 @@ public abstract class AbstractCacheStore <T extends CacheLoaderConfiguration> ex
       if (keys != null && !keys.isEmpty()) {
          for (Object key : keys) remove(key);
       }
-   }
-
-   @Override
-   public T getConfiguration() {
-       return configuration;
    }
 
    protected static void safeClose(InputStream stream) throws CacheLoaderException {

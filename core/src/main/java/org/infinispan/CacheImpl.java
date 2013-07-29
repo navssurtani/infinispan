@@ -18,7 +18,6 @@ import org.infinispan.commands.write.PutMapCommand;
 import org.infinispan.commands.write.RemoveCommand;
 import org.infinispan.commands.write.ReplaceCommand;
 import org.infinispan.configuration.cache.Configuration;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
 import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.configuration.global.GlobalConfiguration;
 import org.infinispan.container.DataContainer;

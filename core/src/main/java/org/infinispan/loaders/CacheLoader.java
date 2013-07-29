@@ -13,7 +13,7 @@ import java.util.Set;
  * @author Manik Surtani
  * @since 4.0
  */
-public interface CacheLoader <T>{
+public interface CacheLoader {
 
    /**
     * Used to initialize a cache loader.  Typically invoked by the {@link org.infinispan.loaders.CacheLoaderManager}
@@ -24,7 +24,8 @@ public interface CacheLoader <T>{
     *               selecting where refer to state in storage, for example, a different database table name.
     * @param m      marshaller to use when loading state from a stream, if supported by the implementation.
     */
-   void init(T configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException;
+   void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException;
 
    /**
     * Loads an entry mapped to by a given key.  Should return null if the entry does not exist.  Expired entries are not
@@ -78,5 +79,5 @@ public interface CacheLoader <T>{
     *
     * @return the {@link org.infinispan.configuration.cache.CacheStoreConfiguration} used.
     */
-   T getConfiguration();
+   CacheLoaderConfiguration getConfiguration();
 }

@@ -3,6 +3,8 @@ package org.infinispan.loaders.file;
 import org.infinispan.Cache;
 import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.commons.io.ExposedByteArrayOutputStream;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
+import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.configuration.cache.FileCacheStoreConfiguration;
 import org.infinispan.configuration.cache.FileCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.CacheLoaderException;
@@ -46,11 +48,13 @@ import java.util.concurrent.TimeUnit;
  * @author Sanne Grinovero
  * @since 4.0
  */
-public class FileCacheStore extends BucketBasedCacheStore<FileCacheStoreConfiguration> {
+public class FileCacheStore extends BucketBasedCacheStore {
 
    static final Log log = LogFactory.getLog(FileCacheStore.class);
    private static final boolean trace = log.isTraceEnabled();
    private int streamBufferSize;
+
+   private FileCacheStoreConfiguration configuration;
 
    File root;
    FileSync fileSync;
@@ -63,9 +67,15 @@ public class FileCacheStore extends BucketBasedCacheStore<FileCacheStoreConfigur
    }
 
    @Override
-   public void init(FileCacheStoreConfiguration config, Cache<?, ?> cache, StreamingMarshaller m) throws
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
          CacheLoaderException {
-      super.init(config, cache, m);
+      if (configuration instanceof FileCacheStoreConfiguration) {
+         this.configuration = (FileCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               FileCacheStoreConfiguration.class.getName());
+      }
+      super.init(configuration, cache, m);
    }
 
    @Override

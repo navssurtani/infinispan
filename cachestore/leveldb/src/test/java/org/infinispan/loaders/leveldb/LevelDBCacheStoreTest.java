@@ -6,8 +6,9 @@ import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.BaseCacheStoreTest;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheStore;
-import org.infinispan.loaders.CacheStoreConfig;
+import org.infinispan.loaders.leveldb.configuration.LevelDBCacheStoreConfigurationBuilder;
 import org.infinispan.test.TestingUtil;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.TestInternalCacheEntryFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -30,22 +31,25 @@ public class LevelDBCacheStoreTest extends BaseCacheStoreTest {
 		new File(tmpDirectory).mkdirs();
 	}
 	
-	protected LevelDBCacheStoreConfig createCacheStoreConfig()
-         throws CacheLoaderException {
-      LevelDBCacheStoreConfig cfg = new LevelDBCacheStoreConfig();
-      cfg.setLocation(tmpDirectory + "/data");
-      cfg.setExpiredLocation(tmpDirectory + "/expiry");
-      cfg.setClearThreshold(2);
-      cfg.setPurgeSynchronously(true); // for more accurate unit testing
-      return cfg;
+	protected LevelDBCacheStoreConfigurationBuilder createBuilder() throws CacheLoaderException {
+      LevelDBCacheStoreConfigurationBuilder storeConfigurationBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(LevelDBCacheStoreConfigurationBuilder.class)
+                  .purgeSynchronously(true)
+                  .clearThreshold(2)
+                  .location(this.tmpDirectory + "/data")
+                  .expiredLocation(this.tmpDirectory + "/expiry");
+
+      return storeConfigurationBuilder;
    }
 
 	@Override
 	protected CacheStore createCacheStore() throws CacheLoaderException {
-		clearTempDir();
+      clearTempDir();
 		fcs = new LevelDBCacheStore();
-		LevelDBCacheStoreConfig cfg = createCacheStoreConfig();		
-		fcs.init(cfg, getCache(), getMarshaller());
+		LevelDBCacheStoreConfigurationBuilder storeConfigurationBuilder = createBuilder();
+		fcs.init(storeConfigurationBuilder.create(), getCache(), getMarshaller());
 		fcs.start();
 		return fcs;
 	}

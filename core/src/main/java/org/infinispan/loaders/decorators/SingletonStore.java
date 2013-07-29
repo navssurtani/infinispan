@@ -1,6 +1,9 @@
 package org.infinispan.loaders.decorators;
 
 import org.infinispan.Cache;
+import org.infinispan.commons.marshall.StreamingMarshaller;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
+import org.infinispan.configuration.cache.CacheStoreConfiguration;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
 import org.infinispan.container.DataContainer;
 import org.infinispan.container.entries.InternalCacheEntry;
@@ -17,6 +20,7 @@ import org.infinispan.remoting.transport.Address;
 import org.infinispan.transaction.xa.GlobalTransaction;
 import org.infinispan.util.logging.Log;
 import org.infinispan.util.logging.LogFactory;
+import org.jboss.marshalling.cloner.ClonerConfiguration;
 
 import java.io.ObjectInput;
 import java.util.List;
@@ -50,13 +54,14 @@ import java.util.concurrent.TimeoutException;
  * @author Manik Surtani
  * @since 4.0
  */
-public class SingletonStore extends AbstractDelegatingStore <SingletonStoreConfiguration>{
+public class SingletonStore extends AbstractDelegatingStore {
    private static final Log log = LogFactory.getLog(SingletonStore.class);
    private static final boolean trace = log.isTraceEnabled();
 
    EmbeddedCacheManager cacheManager;
    Cache<Object, Object> cache;
-   SingletonStoreConfig config;
+
+   private SingletonStoreConfiguration configuration;
 
    /**
     * Name of thread that should pushing in-memory state to cache loader.
@@ -87,11 +92,10 @@ public class SingletonStore extends AbstractDelegatingStore <SingletonStoreConfi
    private volatile boolean active;
 
 
-   public SingletonStore(CacheStore delegate, Cache<Object, Object> cache, SingletonStoreConfig config) {
+   public SingletonStore(CacheStore delegate, Cache<Object, Object> cache) {
       super(delegate);
       this.cacheManager = cache == null ? null : cache.getCacheManager();
       this.cache = cache;
-      this.config = config;
 
       executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
          @Override
@@ -100,6 +104,20 @@ public class SingletonStore extends AbstractDelegatingStore <SingletonStoreConfi
          }
       });
 
+   }
+
+   // -------------- Overriding init()
+   @Override
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
+      if (configuration instanceof CacheStoreConfiguration) {
+         this.configuration = ((CacheStoreConfiguration) configuration).singletonStore();
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               CacheStoreConfiguration.class.getName());
+      }
+
+      delegate.init(configuration, cache, m);
    }
 
    // -------------- Basic write methods
@@ -236,7 +254,7 @@ public class SingletonStore extends AbstractDelegatingStore <SingletonStoreConfi
    protected void activeStatusChanged(boolean newActiveState) throws PushStateException {
       active = newActiveState;
       log.debugf("changed mode %s", this);
-      if (active && config.isPushStateWhenCoordinator()) doPushState();
+      if (active && configuration.pushStateWhenCoordinator()) doPushState();
    }
 
    /**
@@ -268,7 +286,7 @@ public class SingletonStore extends AbstractDelegatingStore <SingletonStoreConfi
          Callable<?> task = createPushStateTask();
          pushStateFuture = executor.submit(task);
          try {
-            waitForTaskToFinish(pushStateFuture, config.getPushStateTimeout(), TimeUnit.MILLISECONDS);
+            waitForTaskToFinish(pushStateFuture, configuration.pushStateTimeout(), TimeUnit.MILLISECONDS);
          }
          catch (Exception e) {
             throw new PushStateException("unable to complete in memory state push to cache loader", e);
@@ -276,7 +294,7 @@ public class SingletonStore extends AbstractDelegatingStore <SingletonStoreConfi
       } else {
          /* at the most, we wait for push state timeout value. if it push task finishes earlier, this call
 * will stop when the push task finishes, otherwise a timeout exception will be reported */
-         awaitForPushToFinish(pushStateFuture, config.getPushStateTimeout(), TimeUnit.MILLISECONDS);
+         awaitForPushToFinish(pushStateFuture, configuration.pushStateTimeout(), TimeUnit.MILLISECONDS);
       }
    }
 

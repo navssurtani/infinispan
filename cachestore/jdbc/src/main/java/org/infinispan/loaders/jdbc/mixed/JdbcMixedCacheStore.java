@@ -1,23 +1,20 @@
 package org.infinispan.loaders.jdbc.mixed;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.AbstractCacheStore;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.CacheStore;
 import org.infinispan.loaders.jdbc.binary.JdbcBinaryCacheStore;
 import org.infinispan.loaders.jdbc.configuration.ConnectionFactoryConfiguration;
 import org.infinispan.loaders.jdbc.configuration.JdbcBinaryCacheStoreConfiguration;
 import org.infinispan.loaders.jdbc.configuration.JdbcBinaryCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.jdbc.configuration.JdbcMixedCacheStoreConfiguration;
-import org.infinispan.loaders.jdbc.configuration.JdbcMixedCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.jdbc.configuration.JdbcStringBasedCacheStoreConfiguration;
 import org.infinispan.loaders.jdbc.configuration.JdbcStringBasedCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactory;
-import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactoryConfig;
 import org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.util.logging.Log;
@@ -48,23 +45,32 @@ import java.util.Set;
  * shared resource.
  *
  * @author Mircea.Markus@jboss.com
- * @see org.infinispan.loaders.jdbc.mixed.JdbcMixedCacheStoreConfig
  * @see org.infinispan.loaders.jdbc.binary.JdbcBinaryCacheStore
  * @see org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore
  */
-public class JdbcMixedCacheStore extends AbstractCacheStore <JdbcMixedCacheStoreConfiguration>{
+public class JdbcMixedCacheStore extends AbstractCacheStore {
 
    private static final Log log = LogFactory.getLog(JdbcMixedCacheStore.class);
+
+   private JdbcMixedCacheStoreConfiguration configuration;
 
    private JdbcBinaryCacheStore binaryCacheStore = new JdbcBinaryCacheStore();
    private JdbcStringBasedCacheStore stringBasedCacheStore = new JdbcStringBasedCacheStore();
    private ConnectionFactory sharedConnectionFactory;
 
    @Override
-   public void init(JdbcMixedCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
+
+      if (configuration instanceof JdbcMixedCacheStoreConfiguration) {
+         this.configuration = (JdbcMixedCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               JdbcMixedCacheStoreConfiguration.class.getName());
+      }
       super.init(configuration, cache, m);
-      binaryCacheStore.init(buildBinaryStoreConfiguration(configuration), cache, m);
-      stringBasedCacheStore.init(buildStringStoreConfiguration(configuration), cache, m);
+      binaryCacheStore.init(buildBinaryStoreConfiguration(this.configuration), cache, m);
+      stringBasedCacheStore.init(buildStringStoreConfiguration(this.configuration), cache, m);
    }
 
    @Override

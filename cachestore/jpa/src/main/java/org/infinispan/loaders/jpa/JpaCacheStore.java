@@ -29,6 +29,7 @@ import javax.persistence.metamodel.Type;
 
 import org.infinispan.AdvancedCache;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.ImmortalCacheEntry;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.CacheLoaderException;
@@ -42,17 +43,25 @@ import org.infinispan.loaders.jpa.configuration.JpaCacheStoreConfiguration;
  * @author <a href="mailto:rtsang@redhat.com">Ray Tsang</a>
  *
  */
-public class JpaCacheStore extends LockSupportCacheStore<Integer, JpaCacheStoreConfiguration> {
+public class JpaCacheStore extends LockSupportCacheStore<Integer> {
 	private AdvancedCache<?, ?> cache;
 	private EntityManagerFactory emf;
 	private EntityManagerFactoryRegistry emfRegistry;
 
+   private JpaCacheStoreConfiguration configuration;
+
 	private final static byte BINARY_STREAM_DELIMITER = 100;
 
 	@Override
-	public void init(JpaCacheStoreConfiguration configuration, Cache<?, ?> cache,
-			StreamingMarshaller m) throws CacheLoaderException {
-		super.init(configuration, cache, m);
+	public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache,
+                    StreamingMarshaller m) throws CacheLoaderException {
+		if (configuration instanceof JpaCacheStoreConfiguration) {
+         this.configuration = (JpaCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               JpaCacheStoreConfiguration.class.getName());
+      }
+      super.init(configuration, cache, m);
 		this.cache = cache.getAdvancedCache();
 		this.emfRegistry = this.cache.getComponentRegistry().getGlobalComponentRegistry().getComponent(EntityManagerFactoryRegistry.class);
 	}

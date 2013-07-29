@@ -5,7 +5,9 @@ import java.io.ObjectOutput;
 import java.util.Set;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.configuration.cache.CacheStoreConfiguration;
+import org.infinispan.configuration.cache.LockSupportStoreConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.util.concurrent.locks.StripedLock;
@@ -20,7 +22,8 @@ import org.infinispan.util.logging.LogFactory;
  * entry.
  * <p/>
  * Locking is based on a {@link StripedLock}. You can tune the concurrency level of the striped lock (see the Javadocs
- * of StripedLock for details on what this is) by using the {@link LockSupportCacheStoreConfig#setLockConcurrencyLevel(int)}
+ * of StripedLock for details on what this is) by using the {@link org.infinispan.configuration.cache
+ * .LockSupportStoreConfiguration#concurrency}
  * setter.
  * <p/>
  *
@@ -30,31 +33,38 @@ import org.infinispan.util.logging.LogFactory;
  * @param <L> the type of the locking key returned by
  *            {@link #getLockFromKey(Object)}
  */
-public abstract class LockSupportCacheStore<L, T extends CacheStoreConfiguration> extends AbstractCacheStore <T> {
+public abstract class LockSupportCacheStore<L> extends AbstractCacheStore {
 
    private static final Log log = LogFactory.getLog(LockSupportCacheStore.class);
    private static final boolean trace = log.isTraceEnabled();
 
    private StripedLock locks;
    private long globalLockTimeoutMillis;
-   private LockSupportCacheStoreConfig config;
+
+   private LockSupportStoreConfiguration configuration;
 
    @Override
-   public void init(T config, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
-      super.init(config, cache, m);
-      this.config = (LockSupportCacheStoreConfig) config;
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+      if (configuration instanceof LockSupportStoreConfiguration) {
+         this.configuration = (LockSupportStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               LockSupportStoreConfiguration.class.getName());
+      }
+
+      super.init(configuration, cache, m);
    }
 
    @Override
    public void start() throws CacheLoaderException {
       super.start();
-      if (config == null) {
+      if (configuration == null) {
         throw new CacheLoaderException("Null config. Possible reason is not calling super.init(...)");
       }
-      log.tracef("Starting cache with config: %s", config);
+      log.tracef("Starting cache with config: %s", configuration);
 
-      locks = new StripedLock(config.getLockConcurrencyLevel());
-      globalLockTimeoutMillis = config.getLockAcquistionTimeout();
+      locks = new StripedLock(configuration.lockConcurrencyLevel());
+      globalLockTimeoutMillis = configuration.lockAcquistionTimeout();
    }
 
    /**

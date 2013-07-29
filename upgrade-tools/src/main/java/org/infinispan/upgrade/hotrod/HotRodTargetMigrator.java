@@ -12,9 +12,9 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.factories.ComponentRegistry;
 import org.infinispan.loaders.CacheLoaderManager;
 import org.infinispan.loaders.remote.RemoteCacheStore;
-import org.infinispan.loaders.remote.RemoteCacheStoreConfig;
 import org.infinispan.commons.marshall.Marshaller;
 import org.infinispan.commons.marshall.jboss.GenericJBossMarshaller;
+import org.infinispan.loaders.remote.configuration.RemoteCacheStoreConfiguration;
 import org.infinispan.upgrade.TargetMigrator;
 import org.infinispan.upgrade.logging.Log;
 import org.infinispan.commons.util.Util;
@@ -50,8 +50,8 @@ public class HotRodTargetMigrator implements TargetMigrator {
       for (RemoteCacheStore store : stores) {
          final RemoteCache<Object, Object> storeCache = store.getRemoteCache();
          if (storeCache.containsKey(knownKeys)) {
-            RemoteCacheStoreConfig storeConfig = (RemoteCacheStoreConfig) store.getCacheStoreConfig();
-            if (!storeConfig.isHotRodWrapping()) {
+            RemoteCacheStoreConfiguration storeConfig = (RemoteCacheStoreConfiguration) store.getConfiguration();
+            if (!storeConfig.hotRodWrapping()) {
                throw log.remoteStoreNoHotRodWrapping(cache.getName());
             }
 

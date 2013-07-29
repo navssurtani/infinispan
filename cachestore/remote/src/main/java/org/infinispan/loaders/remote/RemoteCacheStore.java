@@ -11,6 +11,7 @@ import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.ExhaustedAction;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.InternalEntryFactory;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.versioning.NumericVersion;
@@ -44,14 +45,16 @@ import java.util.concurrent.TimeUnit;
  * <p/>
  *
  * @author Mircea.Markus@jboss.com
- * @see org.infinispan.loaders.remote.RemoteCacheStoreConfig
+ * @see org.infinispan.loaders.remote.configuration.RemoteCacheStoreConfiguration
  * @see <a href="http://community.jboss.org/wiki/JavaHotRodclient">Hotrod Java Client</a>
  * @since 4.1
  */
 @ThreadSafe
-public class RemoteCacheStore extends AbstractCacheStore<RemoteCacheStoreConfiguration> {
+public class RemoteCacheStore extends AbstractCacheStore {
 
    private static final Log log = LogFactory.getLog(RemoteCacheStore.class, Log.class);
+
+   private RemoteCacheStoreConfiguration configuration;
 
    private volatile RemoteCacheManager remoteCacheManager;
    private volatile RemoteCache<Object, Object> remoteCache;
@@ -148,7 +151,14 @@ public class RemoteCacheStore extends AbstractCacheStore<RemoteCacheStoreConfigu
    }
 
    @Override
-   public void init(RemoteCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
+      if (configuration instanceof RemoteCacheStoreConfiguration) {
+         this.configuration = (RemoteCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               RemoteCacheStoreConfiguration.class.getName());
+      }
       super.init(configuration, cache, m);
    }
 

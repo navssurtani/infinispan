@@ -3,7 +3,6 @@ package org.infinispan.loaders.cassandra.configuration;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.infinispan.loaders.cassandra.CassandraCacheStoreConfig;
 import org.testng.annotations.Test;
 
 @Test(groups = "unit", testName = "loaders.cassandra.configuration.ConfigurationTest")
@@ -43,13 +42,5 @@ public class ConfigurationTest {
       assert store2.writeConsistencyLevel().equals(ConsistencyLevel.ANY);
       assert store2.fetchPersistentState();
       assert store2.async().enabled();
-
-      CassandraCacheStoreConfig legacy = store.adapt();
-      assert !legacy.isAutoCreateKeyspace();
-      assert legacy.isFramed();
-      assert legacy.getReadConsistencyLevel().equals(ConsistencyLevel.EACH_QUORUM.toString());
-      assert legacy.getWriteConsistencyLevel().equals(ConsistencyLevel.ANY.toString());
-      assert legacy.isFetchPersistentState();
-      assert legacy.getAsyncStoreConfig().isEnabled();
    }
 }

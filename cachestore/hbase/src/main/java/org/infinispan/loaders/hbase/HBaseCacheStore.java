@@ -14,12 +14,11 @@ import java.util.Set;
 import org.apache.hadoop.hbase.TableExistsException;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
 import org.infinispan.loaders.AbstractCacheStore;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
-import org.infinispan.loaders.CacheLoaderMetadata;
 import org.infinispan.loaders.hbase.configuration.HBaseCacheStoreConfiguration;
 import org.infinispan.loaders.keymappers.MarshallingTwoWayKey2StringMapper;
 import org.infinispan.loaders.keymappers.TwoWayKey2StringMapper;
@@ -36,7 +35,7 @@ import org.infinispan.util.logging.LogFactory;
  * @author Justin Hayes
  * @since 5.2
  */
-public class HBaseCacheStore extends AbstractCacheStore<HBaseCacheStoreConfiguration> {
+public class HBaseCacheStore extends AbstractCacheStore {
    private static final Log log = LogFactory.getLog(HBaseCacheStore.class, Log.class);
 
    private String cacheName;
@@ -53,9 +52,19 @@ public class HBaseCacheStore extends AbstractCacheStore<HBaseCacheStoreConfigura
 
    private HBaseFacade hbf;
 
+   private HBaseCacheStoreConfiguration configuration;
+
    @Override
-   public void init(HBaseCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m)
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m)
             throws CacheLoaderException {
+
+      if (configuration instanceof HBaseCacheStoreConfiguration) {
+         this.configuration = (HBaseCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               HBaseCacheStoreConfiguration.class.getName());
+      }
+
       super.init(configuration, cache, m);
       this.cacheName = cache.getName();
    }

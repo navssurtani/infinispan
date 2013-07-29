@@ -2,7 +2,9 @@ package org.infinispan.loaders.mongodb;
 
 import org.infinispan.loaders.BaseCacheStoreTest;
 import org.infinispan.loaders.CacheStore;
+import org.infinispan.loaders.mongodb.configuration.MongoDBCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.mongodb.logging.Log;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.util.logging.LogFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -34,11 +36,20 @@ public class MongoDBCacheStoreTest extends BaseCacheStoreTest {
       }
       log.runningTest(hostname, port);
 
-      MongoDBCacheStoreConfig config = new MongoDBCacheStoreConfig(hostname, port, 2000, "", "", java.util.UUID.randomUUID().toString(), "infinispan_indexes", -1);
-      config.setPurgeSynchronously(true);
+      MongoDBCacheStoreConfigurationBuilder storeConfigurationBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(MongoDBCacheStoreConfigurationBuilder.class)
+               .purgeSynchronously(true)
+               .host(hostname)
+               .port(port)
+               .timeout(2000)
+               .database(java.util.UUID.randomUUID().toString())
+               .collection("infinispan_indexes")
+               .acknowledgment(-1);
 
       cacheStore = new MongoDBCacheStore();
-      cacheStore.init(config, getCache(), getMarshaller());
+      cacheStore.init(storeConfigurationBuilder.create(), getCache(), getMarshaller());
       cacheStore.start();
       return cacheStore;
    }

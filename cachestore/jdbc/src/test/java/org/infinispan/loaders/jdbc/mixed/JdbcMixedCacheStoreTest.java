@@ -14,12 +14,16 @@ import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheStore;
 import org.infinispan.loaders.jdbc.TableManipulation;
 import org.infinispan.loaders.jdbc.TableName;
+import org.infinispan.loaders.jdbc.configuration.ConnectionFactoryConfiguration;
+import org.infinispan.loaders.jdbc.configuration.JdbcMixedCacheStoreConfiguration;
+import org.infinispan.loaders.jdbc.configuration.JdbcMixedCacheStoreConfigurationBuilder;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactory;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactoryConfig;
 import org.infinispan.loaders.jdbc.stringbased.Person;
 import org.infinispan.loaders.keymappers.DefaultTwoWayKey2StringMapper;
 import org.infinispan.commons.marshall.StreamingMarshaller;
 import org.infinispan.marshall.TestObjectStreamMarshaller;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.TestInternalCacheEntryFactory;
 import org.infinispan.test.fwk.UnitTestDatabaseManager;
 import org.testng.annotations.AfterMethod;
@@ -44,16 +48,29 @@ public class JdbcMixedCacheStoreTest {
 
    @BeforeMethod
    public void createCacheStore() throws CacheLoaderException {
-      stringsTm = UnitTestDatabaseManager.buildStringTableManipulation();
-      stringsTm.setTableNamePrefix("STRINGS_TABLE");
-      binaryTm = UnitTestDatabaseManager.buildBinaryTableManipulation();
-      binaryTm.setTableNamePrefix("BINARY_TABLE");
-      cfc = UnitTestDatabaseManager.getUniqueConnectionFactoryConfig();
-      JdbcMixedCacheStoreConfig cacheStoreConfig = new JdbcMixedCacheStoreConfig(cfc, binaryTm, stringsTm);
-      cacheStoreConfig.setPurgeSynchronously(true);
-      cacheStoreConfig.setKey2StringMapperClass(DefaultTwoWayKey2StringMapper.class.getName());
+      JdbcMixedCacheStoreConfigurationBuilder storeBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(JdbcMixedCacheStoreConfigurationBuilder.class)
+               .purgeSynchronously(true);
+      UnitTestDatabaseManager.buildTableManipulation(storeBuilder.stringTable(), false);
+      UnitTestDatabaseManager.buildTableManipulation(storeBuilder.binaryTable(), true);
+
+      storeBuilder
+            .stringTable()
+               .tableNamePrefix("STRINGS_TABLE")
+               .key2StringMapper(DefaultTwoWayKey2StringMapper.class)
+            .stringTable()
+               .tableNamePrefix("BINARY_TABLE");
+
+      JdbcMixedCacheStoreConfiguration storeConfiguration = storeBuilder.create();
+
+      stringsTm = new TableManipulation(storeConfiguration.stringTable());
+      binaryTm = new TableManipulation(storeConfiguration.binaryTable());
+
+      ConnectionFactoryConfiguration cfc = UnitTestDatabaseManager.configureUniqueConnectionFactory(storeBuilder).create();
       cacheStore = new JdbcMixedCacheStore();
-      cacheStore.init(cacheStoreConfig, AbstractCacheStoreTest.mockCache(getClass().getName()), getMarshaller());
+      cacheStore.init(storeConfiguration, AbstractCacheStoreTest.mockCache(getClass().getName()), getMarshaller());
       cacheStore.start();
    }
 

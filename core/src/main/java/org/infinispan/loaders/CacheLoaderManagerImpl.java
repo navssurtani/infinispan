@@ -12,7 +12,6 @@ import javax.transaction.TransactionManager;
 
 import org.infinispan.AdvancedCache;
 import org.infinispan.configuration.cache.Configuration;
-import org.infinispan.configuration.cache.LegacyConfigurationAdaptor;
 import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.configuration.cache.LoadersConfiguration;
 import org.infinispan.configuration.cache.CacheStoreConfiguration;
@@ -26,11 +25,7 @@ import org.infinispan.factories.annotations.Start;
 import org.infinispan.factories.annotations.Stop;
 import org.infinispan.interceptors.CacheLoaderInterceptor;
 import org.infinispan.interceptors.CacheStoreInterceptor;
-import org.infinispan.loaders.decorators.AsyncStore;
 import org.infinispan.loaders.decorators.ChainingCacheStore;
-import org.infinispan.loaders.decorators.ReadOnlyStore;
-import org.infinispan.loaders.decorators.SingletonStore;
-import org.infinispan.loaders.decorators.SingletonStoreConfig;
 import org.infinispan.commons.CacheConfigurationException;
 import org.infinispan.commons.CacheException;
 import org.infinispan.commons.marshall.StreamingMarshaller;
@@ -301,9 +296,9 @@ public class CacheLoaderManagerImpl implements CacheLoaderManager {
                if(scfg.fetchPersistentState()) numLoadersWithFetchPersistentState++;
             }
             if (numLoadersWithFetchPersistentState > 1)
-               throw new Exception("Invalid cache loader configuration!!  Only ONE cache loader may have fetchPersistentState set to true.  Cache will not start!");
+               throw log.multipleCacheStoresWithFetchPersistentState();
 
-            CacheLoader l = createCacheLoader(LegacyConfigurationAdaptor.adapt(cfg), cache);
+            CacheLoader l = createCacheLoader();
             ccl.addCacheLoader(l, cfg);
          }
       } else {
@@ -311,50 +306,13 @@ public class CacheLoaderManagerImpl implements CacheLoaderManager {
             CacheLoaderConfiguration cfg = clmConfig.cacheLoaders().get(0);
             if (cfg instanceof CacheStoreConfiguration)
                assertNotSingletonAndShared((CacheStoreConfiguration) cfg);
-            tmpLoader = createCacheLoader(LegacyConfigurationAdaptor.adapt(cfg), cache);
+            tmpLoader = createCacheLoader();
          } else {
             return null;
          }
       }
 
       return tmpLoader;
-   }
-
-   CacheLoader createCacheLoader(CacheLoaderConfig cfg, AdvancedCache<Object, Object> cache) throws Exception {
-      CacheLoader tmpLoader = (CacheLoader) Util.getInstance(cfg.getCacheLoaderClassName(), cache.getClassLoader());
-
-      if (tmpLoader != null) {
-         if (cfg instanceof CacheStoreConfig) {
-            CacheStore tmpStore = (CacheStore) tmpLoader;
-            // async?
-            CacheStoreConfig cfg2 = (CacheStoreConfig) cfg;
-            if (cfg2.getAsyncStoreConfig().isEnabled()) {
-               tmpStore = createAsyncStore(tmpStore, cfg2);
-               tmpLoader = tmpStore;
-            }
-
-            // read only?
-            if (cfg2.isIgnoreModifications()) {
-               tmpStore = new ReadOnlyStore(tmpStore);
-               tmpLoader = tmpStore;
-            }
-
-            // singleton?
-            SingletonStoreConfig ssc = cfg2.getSingletonStoreConfig();
-            if (ssc != null && ssc.isSingletonStoreEnabled()) {
-               tmpStore = new SingletonStore(tmpStore, cache, ssc);
-               tmpLoader = tmpStore;
-            }
-         }
-
-         // load props
-         tmpLoader.init(cfg, cache, m);
-      }
-      return tmpLoader;
-   }
-
-   protected AsyncStore createAsyncStore(CacheStore tmpStore, CacheStoreConfig cfg2) {
-      return new AsyncStore(tmpStore, cfg2.getAsyncStoreConfig());
    }
 
    void assertNotSingletonAndShared(CacheStoreConfiguration cfg) {

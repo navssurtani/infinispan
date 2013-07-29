@@ -2,7 +2,6 @@ package org.infinispan.loaders.hbase.configuration;
 
 import org.infinispan.configuration.cache.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
-import org.infinispan.loaders.hbase.HBaseCacheStoreConfig;
 import org.testng.annotations.Test;
 
 @Test(groups = "unit", testName = "loaders.hbase.configuration.ConfigurationTest")
@@ -53,17 +52,5 @@ public class ConfigurationTest {
       assert store2.sharedTable();
       assert store2.fetchPersistentState();
       assert store2.async().enabled();
-
-      HBaseCacheStoreConfig legacy = store.adapt();
-      assert !legacy.isAutoCreateTable();
-      assert legacy.getEntryColumnFamily().equals("ECF");
-      assert legacy.getEntryTable().equals("ET");
-      assert legacy.getEntryValueField().equals("EVF");
-      assert legacy.getExpirationColumnFamily().equals("XCF");
-      assert legacy.getExpirationTable().equals("XT");
-      assert legacy.getExpirationValueField().equals("XVF");
-      assert legacy.getHbaseZookeeperPropertyClientPort() == 4321;
-      assert legacy.isFetchPersistentState();
-      assert legacy.getAsyncStoreConfig().isEnabled();
    }
 }

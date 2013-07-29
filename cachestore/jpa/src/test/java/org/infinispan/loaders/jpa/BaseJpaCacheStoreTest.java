@@ -22,10 +22,10 @@ import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.io.UnclosableObjectInputStream;
 import org.infinispan.io.UnclosableObjectOutputStream;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheStore;
 import org.infinispan.loaders.LockSupportCacheStore;
+import org.infinispan.loaders.jpa.configuration.JpaCacheStoreConfiguration;
 import org.infinispan.loaders.modifications.Clear;
 import org.infinispan.loaders.modifications.Modification;
 import org.infinispan.loaders.modifications.Remove;
@@ -89,7 +89,14 @@ public abstract class BaseJpaCacheStoreTest extends AbstractInfinispanTest {
          cm = createCacheManager();
          cm.start();
          cs = createCacheStore();
-         assert (cs.getCacheStoreConfig()==null || cs.getCacheStoreConfig().isPurgeSynchronously()) : "Cache store tests expect purgeSynchronously to be enabled";
+         JpaCacheStoreConfiguration storeConfiguration;
+         if (cs.getConfiguration() instanceof JpaCacheStoreConfiguration) {
+            storeConfiguration = (JpaCacheStoreConfiguration) cs.getConfiguration();
+         } else {
+            throw new CacheLoaderException("Store configuration must be an instance of JpaCacheStoreConfiguration");
+         }
+         assert (storeConfiguration==null || storeConfiguration.purgeSynchronously()) : "Cache store tests expect " +
+               "purgeSynchronously to be enabled";
       } catch (Exception e) {
          //in IDEs this won't be printed which makes debugging harder
          e.printStackTrace();
@@ -665,13 +672,6 @@ public abstract class BaseJpaCacheStoreTest extends AbstractInfinispanTest {
 
 		if (!exceptions.isEmpty())
 			throw exceptions.get(0);
-	}
-
-	public void testConfigFile() throws Exception {
-		CacheLoaderConfiguration cfgClass = cs
-				.getConfiguration();
-		CacheLoaderConfig clc = Util.getInstance(cfgClass);
-		assert clc.getCacheLoaderClassName().equals(cs.getClass().getName()) : "Cache loaders doesn't provide a proper configuration type that is capable of creating the loaders!";
 	}
 
    /*

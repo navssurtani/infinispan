@@ -9,6 +9,7 @@ import jdbm.helper.TupleBrowser;
 import jdbm.htree.HTree;
 import net.jcip.annotations.ThreadSafe;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
@@ -56,7 +57,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @author Galder Zamarreño
  */
 @ThreadSafe
-public class JdbmCacheStore extends AbstractCacheStore <JdbmCacheStoreConfiguration>{
+public class JdbmCacheStore extends AbstractCacheStore {
 
    private static final Log log = LogFactory.getLog(JdbmCacheStore.class, Log.class);
    private static final boolean trace = log.isTraceEnabled();
@@ -75,9 +76,15 @@ public class JdbmCacheStore extends AbstractCacheStore <JdbmCacheStoreConfigurat
    private BTree expiryTree;
 
    @Override
-   public void init(JdbmCacheStoreConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws CacheLoaderException {
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
+         CacheLoaderException {
+      if (configuration instanceof JdbmCacheStoreConfiguration) {
+         this.configuration = (JdbmCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               JdbmCacheStoreConfiguration.class.getName());
+      }
       super.init(configuration, cache, m);
-      this.configuration = configuration;
    }
 
    @Override

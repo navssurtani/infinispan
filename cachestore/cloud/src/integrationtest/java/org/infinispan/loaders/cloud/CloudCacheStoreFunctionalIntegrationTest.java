@@ -1,8 +1,11 @@
 package org.infinispan.loaders.cloud;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.ConfigurationBuilder;
+import org.infinispan.configuration.cache.LoadersConfigurationBuilder;
 import org.infinispan.loaders.BaseCacheStoreFunctionalTest;
-import org.infinispan.loaders.CacheStoreConfig;
+import org.infinispan.loaders.cloud.configuration.CloudCacheStoreConfigurationBuilder;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Optional;
@@ -50,10 +53,13 @@ public class CloudCacheStoreFunctionalIntegrationTest extends BaseCacheStoreFunc
    private void nukeBuckets() throws Exception {
       for (String name: cacheNames) {
          // use JClouds to nuke the buckets
+         ConfigurationBuilder builder = TestCacheManagerFactory.getDefaultCacheConfiguration(false);
+         CloudCacheStoreConfigurationBuilder cloudBuilder = builder.loaders()
+               .addLoader(CloudCacheStoreConfigurationBuilder.class);
          CloudCacheStore ccs = new CloudCacheStore();
          Cache c = mock(Cache.class);
          when(c.getName()).thenReturn(name);
-         ccs.init(createCacheStoreConfig(), c, null);
+         ccs.init(cloudBuilder.create(), c, null);
          ccs.start();
          System.out.println("**** Nuking container " + ccs.containerName);
          ccs.blobStore.clearContainer(ccs.containerName);
@@ -63,20 +69,9 @@ public class CloudCacheStoreFunctionalIntegrationTest extends BaseCacheStoreFunc
       cacheNames.clear();
    }
 
-
    @Override
-   protected CacheStoreConfig createCacheStoreConfig() throws Exception {
-      CloudCacheStoreConfig cfg = new CloudCacheStoreConfig();
-      cfg.setCloudService(cs);
-      cfg.setBucketPrefix(csBucket);
-      cfg.setIdentity(accessKey);
-      cfg.setPassword(secretKey);
-      cfg.setProxyHost(proxyHost);
-      cfg.setProxyPort(proxyPort);
-      cfg.setSecure(isSecure);
-      cfg.setMaxConnections(maxConnections);
-      cfg.setCompress(true);
-      cfg.setPurgeSynchronously(true); // for more accurate unit testing
-      return cfg;
+   protected LoadersConfigurationBuilder createCacheStoreConfig(LoadersConfigurationBuilder loaders) {
+      throw new UnsupportedOperationException("You don't need to be calling this method on " + this.getClass()
+            .getName());
    }
 }

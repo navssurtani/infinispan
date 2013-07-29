@@ -10,8 +10,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import org.infinispan.loaders.CacheLoaderException;
+import org.infinispan.loaders.jdbc.configuration.ConnectionFactoryConfiguration;
+import org.infinispan.loaders.jdbc.configuration.JdbcStringBasedCacheStoreConfigurationBuilder;
+import org.infinispan.loaders.jdbc.configuration.PooledConnectionFactoryConfiguration;
+import org.infinispan.loaders.jdbc.configuration.SimpleConnectionFactoryConfiguration;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactoryConfig;
 import org.infinispan.loaders.jdbc.connectionfactory.PooledConnectionFactory;
+import org.infinispan.loaders.jdbc.connectionfactory.SimpleConnectionFactory;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.infinispan.test.fwk.UnitTestDatabaseManager;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
@@ -26,13 +32,31 @@ import org.testng.annotations.Test;
 public class TableManipulationTest {
    Connection connection;
    TableManipulation tableManipulation;
-   private ConnectionFactoryConfig cfg;
+   private ConnectionFactoryConfiguration factoryConfiguration;
 
    @BeforeTest
    public void createConnection() throws Exception {
-      cfg = UnitTestDatabaseManager.getUniqueConnectionFactoryConfig();
-      connection = DriverManager.getConnection(cfg.getConnectionUrl(), cfg.getUserName(), cfg.getPassword());
-      tableManipulation = UnitTestDatabaseManager.buildStringTableManipulation();
+      JdbcStringBasedCacheStoreConfigurationBuilder storeBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(JdbcStringBasedCacheStoreConfigurationBuilder.class)
+               .purgeSynchronously(true);
+      UnitTestDatabaseManager.buildTableManipulation(storeBuilder.table(), false);
+      factoryConfiguration = UnitTestDatabaseManager.configureUniqueConnectionFactory(storeBuilder).create();
+      tableManipulation = new TableManipulation(storeBuilder.table().create());
+
+      if (factoryConfiguration instanceof SimpleConnectionFactoryConfiguration) {
+         SimpleConnectionFactoryConfiguration simpleConfiguration = (SimpleConnectionFactoryConfiguration)
+               factoryConfiguration;
+         connection = DriverManager.getConnection(simpleConfiguration.connectionUrl(),
+               simpleConfiguration.username(), simpleConfiguration.password());
+
+      } else if (factoryConfiguration instanceof PooledConnectionFactoryConfiguration) {
+         PooledConnectionFactoryConfiguration pooledConfiguration = (PooledConnectionFactoryConfiguration)
+               factoryConfiguration;
+         connection = DriverManager.getConnection(pooledConfiguration.connectionUrl(),
+               pooledConfiguration.username(), pooledConfiguration.password());
+      }
       tableManipulation.setCacheName("aName");
    }
 
@@ -42,21 +66,26 @@ public class TableManipulationTest {
    }
 
    public void testConnectionLeakGuessDatabaseType() throws Exception {
-      TableManipulation tableManipulation = UnitTestDatabaseManager.buildStringTableManipulation();
+      JdbcStringBasedCacheStoreConfigurationBuilder storeBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(JdbcStringBasedCacheStoreConfigurationBuilder.class)
+               .purgeSynchronously(true);
+
+      UnitTestDatabaseManager.buildTableManipulation(storeBuilder.table(), false);
+
+      TableManipulation tableManipulation = new TableManipulation(storeBuilder.table().create());
       // database type must now be determined
       tableManipulation.databaseType = null;
       tableManipulation.setCacheName("GuessDatabaseType");
 
       PooledConnectionFactory factory = new PooledConnectionFactory();
-      ConnectionFactoryConfig config = UnitTestDatabaseManager.getUniqueConnectionFactoryConfig();
+      ConnectionFactoryConfiguration config = UnitTestDatabaseManager
+            .configureUniqueConnectionFactory(storeBuilder).create();
       factory.start(config, Thread.currentThread().getContextClassLoader());
-
       tableManipulation.start(factory);
-
       tableManipulation.getUpdateRowSql();
-
       UnitTestDatabaseManager.verifyConnectionLeaks(factory);
-
       tableManipulation.stop();
       factory.stop();
    }

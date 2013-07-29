@@ -9,7 +9,6 @@ import javax.cache.CacheWriter;
 
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.AbstractCacheStore;
-import org.infinispan.loaders.CacheLoaderConfig;
 import org.infinispan.loaders.CacheLoaderException;
 
 public class JCacheWriterAdapter<K, V> extends AbstractCacheStore {
@@ -74,11 +73,6 @@ public class JCacheWriterAdapter<K, V> extends AbstractCacheStore {
    public Set<Object> loadAllKeys(Set<Object> keysToExclude) throws CacheLoaderException {
       // TODO
       return Collections.emptySet();
-   }
-
-   private Class<? extends CacheLoaderConfig> getConfiguration() {
-      // TODO
-      return null;
    }
 
    @Override

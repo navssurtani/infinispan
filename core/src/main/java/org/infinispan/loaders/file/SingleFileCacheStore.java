@@ -19,6 +19,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.configuration.cache.SingleFileCacheStoreConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
@@ -56,7 +57,7 @@ import org.infinispan.util.logging.LogFactory;
  * @author Karsten Blees
  * @since 6.0
  */
-public class SingleFileCacheStore extends AbstractCacheStore <SingleFileCacheStoreConfiguration>{
+public class SingleFileCacheStore extends AbstractCacheStore {
 
    private static final Log log = LogFactory.getLog(SingleFileCacheStore.class);
 
@@ -64,6 +65,8 @@ public class SingleFileCacheStore extends AbstractCacheStore <SingleFileCacheSto
    private static final byte[] ZERO_INT = { 0, 0, 0, 0 };
    private static final int KEYLEN_POS = 4;
    private static final int KEY_POS = 4 + 4 + 4 + 8;
+
+   private SingleFileCacheStoreConfiguration configuration;
 
    private FileChannel file;
    private Map<Object, FileEntry> entries;
@@ -73,9 +76,15 @@ public class SingleFileCacheStore extends AbstractCacheStore <SingleFileCacheSto
 
    /** {@inheritDoc} */
    @Override
-   public void init(SingleFileCacheStoreConfiguration config, Cache<?, ?> cache, StreamingMarshaller m) throws
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) throws
            CacheLoaderException {
-      super.init(config, cache, m);
+      if (configuration instanceof SingleFileCacheStoreConfiguration) {
+         this.configuration = (SingleFileCacheStoreConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               SingleFileCacheStoreConfiguration.class.getName());
+      }
+      super.init(configuration, cache, m);
    }
 
    /** {@inheritDoc} */

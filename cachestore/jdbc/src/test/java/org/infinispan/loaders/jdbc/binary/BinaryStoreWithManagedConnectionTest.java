@@ -8,6 +8,8 @@ import org.infinispan.loaders.CacheStore;
 import org.infinispan.loaders.jdbc.ManagedConnectionFactoryTest;
 import org.infinispan.loaders.jdbc.TableManipulation;
 import org.infinispan.loaders.jdbc.configuration.JdbcBinaryCacheStoreConfiguration;
+import org.infinispan.loaders.jdbc.configuration.JdbcBinaryCacheStoreConfigurationBuilder;
+import org.infinispan.loaders.jdbc.configuration.ManagedConnectionFactoryConfigurationBuilder;
 import org.infinispan.loaders.jdbc.connectionfactory.ConnectionFactoryConfig;
 import org.infinispan.loaders.jdbc.connectionfactory.ManagedConnectionFactory;
 import org.infinispan.manager.CacheContainer;
@@ -19,18 +21,21 @@ import org.testng.annotations.Test;
 /**
  * @author Mircea.Markus@jboss.com
  */
-@Test (groups = "functional", testName = "loaders.jdbc.binary.BinaryStoreWithManagedConnectionTest")
+@Test(groups = "functional", testName = "loaders.jdbc.binary.BinaryStoreWithManagedConnectionTest")
 public class BinaryStoreWithManagedConnectionTest extends ManagedConnectionFactoryTest {
    @Override
    protected CacheStore createCacheStore() throws Exception {
-      ConnectionFactoryConfig connectionFactoryConfig = new ConnectionFactoryConfig();
-      connectionFactoryConfig.setConnectionFactoryClass(ManagedConnectionFactory.class.getName());
-      connectionFactoryConfig.setDatasourceJndiLocation(getDatasourceLocation());
-      TableManipulation tm = UnitTestDatabaseManager.buildBinaryTableManipulation();
-      JdbcBinaryCacheStoreConfig config = new JdbcBinaryCacheStoreConfig(connectionFactoryConfig, tm);
-      config.setPurgeSynchronously(true);
+      JdbcBinaryCacheStoreConfigurationBuilder storeBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(JdbcBinaryCacheStoreConfigurationBuilder.class)
+               .purgeSynchronously(true);
+
+      storeBuilder.dataSource().jndiUrl(getDatasourceLocation());
+      UnitTestDatabaseManager.buildTableManipulation(storeBuilder.table(), true);
+
       JdbcBinaryCacheStore jdbcBinaryCacheStore = new JdbcBinaryCacheStore();
-      jdbcBinaryCacheStore.init(config, getCache(), getMarshaller());
+      jdbcBinaryCacheStore.init(storeBuilder.create(), getCache(), getMarshaller());
       jdbcBinaryCacheStore.start();
       assert jdbcBinaryCacheStore.getConnectionFactory() instanceof ManagedConnectionFactory;
       return jdbcBinaryCacheStore;

@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.store.FSDirectory;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.container.entries.ImmortalCacheEntry;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.loaders.AbstractCacheLoader;
@@ -31,8 +32,7 @@ import org.infinispan.util.logging.LogFactory;
  * @author Sanne Grinovero
  * @since 5.2
  */
-public class LuceneCacheLoader extends AbstractCacheLoader<LuceneCacheLoaderConfiguration> implements CacheLoader
-      <LuceneCacheLoaderConfiguration> {
+public class LuceneCacheLoader extends AbstractCacheLoader {
 
    private static final Log log = LogFactory.getLog(LuceneCacheLoader.class, Log.class);
 
@@ -41,11 +41,21 @@ public class LuceneCacheLoader extends AbstractCacheLoader<LuceneCacheLoaderConf
    private File rootDirectory;
    private int autoChunkSize;
 
+   private LuceneCacheLoaderConfiguration configuration;
+
    @Override
-   public void init(LuceneCacheLoaderConfiguration configuration, final Cache<?, ?> cache,
+   public void init(CacheLoaderConfiguration configuration, final Cache<?, ?> cache,
                     final StreamingMarshaller m) throws CacheLoaderException {
-      this.fileRoot = configuration.location();
-      this.autoChunkSize = configuration.autoChunkSize();
+      if (configuration instanceof LuceneCacheLoaderConfiguration) {
+         this.configuration = (LuceneCacheLoaderConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               LuceneCacheLoaderConfiguration.class.getName());
+      }
+
+      super.init(configuration, cache, m);
+      this.fileRoot = this.configuration.location();
+      this.autoChunkSize = this.configuration.autoChunkSize();
    }
 
    @Override

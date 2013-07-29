@@ -3,6 +3,7 @@ package org.infinispan.loaders.cluster;
 import org.infinispan.AdvancedCache;
 import org.infinispan.Cache;
 import org.infinispan.commands.remote.ClusteredGetCommand;
+import org.infinispan.configuration.cache.CacheLoaderConfiguration;
 import org.infinispan.configuration.cache.ClusterCacheLoaderConfiguration;
 import org.infinispan.container.entries.InternalCacheEntry;
 import org.infinispan.container.entries.InternalCacheValue;
@@ -35,14 +36,25 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Mircea.Markus@jboss.com
  */
-public class ClusterCacheLoader extends AbstractCacheLoader<ClusterCacheLoaderConfiguration> {
+public class ClusterCacheLoader extends AbstractCacheLoader {
    private static final Log log = LogFactory.getLog(ClusterCacheLoader.class);
 
    private RpcManager rpcManager;
    private AdvancedCache<?, ?> cache;
 
+   private ClusterCacheLoaderConfiguration configuration;
+
    @Override
-   public void init(ClusterCacheLoaderConfiguration configuration, Cache<?, ?> cache, StreamingMarshaller m) {
+   public void init(CacheLoaderConfiguration configuration, Cache<?, ?> cache,
+                    StreamingMarshaller m) throws CacheLoaderException {
+
+      if (configuration instanceof ClusterCacheLoaderConfiguration) {
+         this.configuration = (ClusterCacheLoaderConfiguration) configuration;
+      } else {
+         throw new CacheLoaderException("Incompatible configuration bean passed. Has to be an instance of " +
+               ClusterCacheLoaderConfiguration.class.getName());
+      }
+      super.init(configuration, cache, m);
       this.cache = cache.getAdvancedCache();
       rpcManager = this.cache.getRpcManager();
    }

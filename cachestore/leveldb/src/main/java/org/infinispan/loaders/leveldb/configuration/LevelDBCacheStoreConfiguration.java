@@ -3,7 +3,6 @@ package org.infinispan.loaders.leveldb.configuration;
 import org.infinispan.configuration.cache.AbstractLockSupportStoreConfiguration;
 import org.infinispan.configuration.cache.AsyncStoreConfiguration;
 import org.infinispan.configuration.cache.SingletonStoreConfiguration;
-import org.infinispan.loaders.leveldb.LevelDBCacheStoreConfig.ImplementationType;
 import org.infinispan.commons.configuration.BuiltBy;
 import org.infinispan.commons.util.TypedProperties;
 import org.iq80.leveldb.CompressionType;

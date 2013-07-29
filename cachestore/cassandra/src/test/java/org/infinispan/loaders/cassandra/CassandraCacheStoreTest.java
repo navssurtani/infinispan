@@ -7,7 +7,10 @@ import org.apache.thrift.transport.TTransportException;
 import org.infinispan.loaders.BaseCacheStoreTest;
 import org.infinispan.loaders.CacheLoaderException;
 import org.infinispan.loaders.CacheStore;
+import org.infinispan.loaders.cassandra.configuration.CassandraCacheStoreConfigurationBuilder;
+import org.infinispan.loaders.cassandra.configuration.CassandraCacheStoreConfigurationChildBuilder;
 import org.infinispan.loaders.keymappers.UnsupportedKeyTypeException;
+import org.infinispan.test.fwk.TestCacheManagerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -40,12 +43,16 @@ public class CassandraCacheStoreTest extends BaseCacheStoreTest {
    @Override
    protected CacheStore createCacheStore() throws Exception {
       CassandraCacheStore cs = new CassandraCacheStore();
-      CassandraCacheStoreConfig clc = new CassandraCacheStoreConfig();
-      clc.setPurgeSynchronously(true);
-      clc.setHost("127.0.0.1");
-      clc.setAutoCreateKeyspace(true);
-      clc.setKeySpace("Infinispan");
-      cs.init(clc, getCache(), getMarshaller());
+      CassandraCacheStoreConfigurationBuilder storeBuilder = TestCacheManagerFactory
+            .getDefaultCacheConfiguration(false)
+            .loaders()
+               .addLoader(CassandraCacheStoreConfigurationBuilder.class)
+               .purgeSynchronously(true)
+               .addServer()
+                  .host("127.0.0.1")
+               .autoCreateKeyspace(true)
+               .keySpace("Infinispan");
+      cs.init(storeBuilder.create(), getCache(), getMarshaller());
       cs.start();
       return cs;
    }
